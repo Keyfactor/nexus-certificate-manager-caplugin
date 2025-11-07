@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+		<TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <RootNamespace>Keyfactor.Extensions.CAPlugin.NexusCertManager</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+		<AssemblyName>NexusCertManagerCAPlugin</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Keyfactor.AnyGateway.IAnyCAPlugin" Version="3.1.0" />
+    <PackageReference Include="Keyfactor.Logging" Version="1.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+
+</Project>
