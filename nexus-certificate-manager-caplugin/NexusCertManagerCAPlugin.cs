@@ -42,14 +42,15 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         /// <param name="requestFormat">The format of the request</param>
         /// <param name="enrollmentType">The type of enrollment (new, renew, reissue)</param>
         /// <returns></returns>
-        public Task<EnrollmentResult> Enroll(string csr, string subject, Dictionary<string, string[]> san, EnrollmentProductInfo productInfo, RequestFormat requestFormat, EnrollmentType enrollmentType)
+        public async Task<EnrollmentResult> Enroll(string csr, string subject, Dictionary<string, string[]> san, EnrollmentProductInfo productInfo, RequestFormat requestFormat, EnrollmentType enrollmentType)
         {
             _logger.MethodEntry();
+            var enrollmentResult = new EnrollmentResult();
             string sans = string.Join(";", san.Select(s => string.Format("{0}:{1}", s.Key, string.Join(",", s.Value))));
             string paramsList = string.Join(";", productInfo.ProductParameters.Select(x => string.Format("{0}={1}", x.Key, x.Value)));
             _logger.LogTrace($"Attempting to enroll for certificate with:\nSubject: {subject}\nSANs: {sans}\nParams: {paramsList}\nCSR: {csr}");
 
-
+            return enrollmentResult;
         }
 
         public Dictionary<string, PropertyConfigInfo> GetCAConnectorAnnotations()

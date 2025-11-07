@@ -256,6 +256,18 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager.models
         public string Signature { get; set; }
     }
 
+    public class ImportCertificateData
+    {
+        [JsonPropertyName("certificate")]
+        public string Certificate { get; set; }
+
+        [JsonPropertyName("reason")]
+        public int? Reason { get; set; }
+
+        [JsonPropertyName("revocationtime")]
+        public DateTime? RevocationTime { get; set; }
+    }
+
     public class SignatureResponse
     {
         [JsonPropertyName("error")]
