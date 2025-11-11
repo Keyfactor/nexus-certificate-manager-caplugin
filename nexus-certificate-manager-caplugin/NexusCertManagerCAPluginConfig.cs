@@ -6,16 +6,22 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json.Serialization;
 
 namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 {
     public class NexusCertManagerCAPluginConfig
     {
+        [JsonPropertyName(Constants.HOST)]
+        public string Host { get; set; }
 
+        [JsonPropertyName(Constants.AUTHCERTPATH)]
+        public string AuthCertPath { get; set; }
+
+        [JsonPropertyName(Constants.AUTHCERTPASSWORD)]
+        public string AuthCertPassword { get; set; }
+
+        [JsonPropertyName(Constants.ENABLED)]
+        public bool Enabled { get; set; }
     }
 }

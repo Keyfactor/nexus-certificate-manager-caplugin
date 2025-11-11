@@ -7,10 +7,13 @@
 //  and limitations under the License.
 
 using Keyfactor.AnyGateway.Extensions;
+using Keyfactor.Extensions.CAPlugin.NexusCertManager.models;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
+using Keyfactor.PKI.Enums.EJBCA;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
+using System.Security.AccessControl;
 
 namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 {
@@ -19,6 +22,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         private readonly ILogger _logger;
         private NexusCertManagerCAPluginConfig _config;
         private ICertificateDataReader _certificateDataReader;
+        private NexusCertManagerClient _client;
 
         public NexusCertManagerCAPlugin(ILogger<NexusCertManagerCAPlugin> logger)
         {
@@ -30,6 +34,8 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             _certificateDataReader = certificateDataReader;
             string rawConfig = JsonConvert.SerializeObject(configProvider.CAConnectionData);
             _config = JsonConvert.DeserializeObject<NexusCertManagerCAPluginConfig>(rawConfig);
+
+            _client = new NexusCertManagerClient(_config.Host, _config.AuthCertPath, _config.AuthCertPassword); // need to set the values            
         }
 
         /// <summary>
@@ -45,10 +51,21 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         public async Task<EnrollmentResult> Enroll(string csr, string subject, Dictionary<string, string[]> san, EnrollmentProductInfo productInfo, RequestFormat requestFormat, EnrollmentType enrollmentType)
         {
             _logger.MethodEntry();
-            var enrollmentResult = new EnrollmentResult();
+
             string sans = string.Join(";", san.Select(s => string.Format("{0}:{1}", s.Key, string.Join(",", s.Value))));
             string paramsList = string.Join(";", productInfo.ProductParameters.Select(x => string.Format("{0}={1}", x.Key, x.Value)));
+            string commonName = Helpers.ParseSubject(subject, "CN=");
+
             _logger.LogTrace($"Attempting to enroll for certificate with:\nSubject: {subject}\nSANs: {sans}\nParams: {paramsList}\nCSR: {csr}");
+            var res = await _client.Enroll(csr);
+
+            var enrollmentResult = new EnrollmentResult
+            {
+                CARequestID = res.CertId,
+                Certificate = res.Base64EncodedCertificateData,
+                Status = (int)EndEntityStatus.GENERATED,
+                StatusMessage = $"Successfully enrolled certificate {commonName}"
+            };
 
             return enrollmentResult;
         }
@@ -83,9 +100,31 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Synchronize gets the list of certs from the CA and updates the status of each known cert to the latest; and adds missing cert info to the database        /// 
+        /// </summary>
+        /// <param name="blockingBuffer">the database reader, passed by framework</param>
+        /// <param name="lastSync">the time of last sync</param>
+        /// <param name="fullSync">whether or not to perform a full sync</param>
+        /// <param name="cancelToken">the cancel token</param>
+        /// <returns></returns>
         public Task Synchronize(BlockingCollection<AnyCAPluginCertificate> blockingBuffer, DateTime? lastSync, bool fullSync, CancellationToken cancelToken)
         {
-            throw new NotImplementedException();
+            _logger.MethodEntry();
+
+            try
+            {
+                throw new NotImplementedException();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"an error occurred during the sync: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                _logger.MethodExit();
+            }
         }
 
         public Task ValidateCAConnectionInfo(Dictionary<string, object> connectionInfo)
