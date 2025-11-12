@@ -13,7 +13,6 @@ using Microsoft.Extensions.Logging;
 using Keyfactor.PKI.Enums.EJBCA;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
-using System.Security.AccessControl;
 
 namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 {
@@ -51,23 +50,33 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         public async Task<EnrollmentResult> Enroll(string csr, string subject, Dictionary<string, string[]> san, EnrollmentProductInfo productInfo, RequestFormat requestFormat, EnrollmentType enrollmentType)
         {
             _logger.MethodEntry();
-
             string sans = string.Join(";", san.Select(s => string.Format("{0}:{1}", s.Key, string.Join(",", s.Value))));
             string paramsList = string.Join(";", productInfo.ProductParameters.Select(x => string.Format("{0}={1}", x.Key, x.Value)));
             string commonName = Helpers.ParseSubject(subject, "CN=");
 
             _logger.LogTrace($"Attempting to enroll for certificate with:\nSubject: {subject}\nSANs: {sans}\nParams: {paramsList}\nCSR: {csr}");
-            var res = await _client.Enroll(csr);
-
-            var enrollmentResult = new EnrollmentResult
+            try
             {
-                CARequestID = res.CertId,
-                Certificate = res.Base64EncodedCertificateData,
-                Status = (int)EndEntityStatus.GENERATED,
-                StatusMessage = $"Successfully enrolled certificate {commonName}"
-            };
+                var res = await _client.Enroll(csr);
 
-            return enrollmentResult;
+                var enrollmentResult = new EnrollmentResult
+                {
+                    CARequestID = res.CertId,
+                    Certificate = res.Base64EncodedCertificateData,
+                    Status = (int)EndEntityStatus.GENERATED,
+                    StatusMessage = $"Successfully enrolled certificate {commonName}"
+                };
+                return enrollmentResult;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"there was an error enrolling the certificate: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+            finally
+            {
+                _logger.MethodExit();
+            }
         }
 
         public Dictionary<string, PropertyConfigInfo> GetCAConnectorAnnotations()
@@ -75,14 +84,45 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// this CA is does not split it's certificates into discernable "product types"
+        /// consequently, we are using a single product type for all certificates.
+        /// </summary>
+        /// <returns>A list of strings containing one element: "NexusCA"</returns>
         public List<string> GetProductIds()
         {
-            throw new NotImplementedException();
+            _logger.MethodEntry();
+            return new List<string> { Constants.PRODUCTID };
         }
 
-        public Task<AnyCAPluginCertificate> GetSingleRecord(string caRequestID)
+        public async Task<AnyCAPluginCertificate> GetSingleRecord(string caRequestID)
         {
-            throw new NotImplementedException();
+            _logger.MethodEntry();
+            try
+            {
+                var certDetails = await _client.GetCertificateDetails(caRequestID);
+                var certContent = await _client.DownloadCertificate(caRequestID);
+
+                var cert = new AnyCAPluginCertificate()
+                {
+                    CARequestID = caRequestID,
+                    Certificate = certContent.Base64EncodedCertificateData,
+                    ProductID = certDetails.Certificate.CertId,                    
+                    Status = Helpers.GetStatusCodeFromNexusCADescription(certDetails.Certificate.Status),                    
+                };
+                if (cert.Status == (int)EndEntityStatus.REVOKED) {
+                    cert.RevocationDate = certDetails.Certificate.RevocationTime;
+                    cert.RevocationReason = Helpers.GetRevocationReasonCodeFromNexusCADescription(certDetails.Certificate.Reason);
+                }
+                return cert;
+                                   
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"there was an error getting the certificate: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+            finally { _logger.MethodExit(); }
         }
 
         public Dictionary<string, PropertyConfigInfo> GetTemplateParameterAnnotations()

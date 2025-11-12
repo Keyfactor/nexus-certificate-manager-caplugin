@@ -274,7 +274,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager.models
         public string Validity { get; set; }
     }
 
-    public class IssueCertificateBinaryResponse
+    public class CertificateBinaryResponse
     {
         /// <summary>
         /// The binary certificate data (DER, PEM, or PKCS#7 depending on Accept header)

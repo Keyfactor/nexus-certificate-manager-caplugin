@@ -1,4 +1,6 @@
-﻿using RestSharp;
+﻿using Keyfactor.PKI.Enums.EJBCA;
+using Org.BouncyCastle.Tls;
+using RestSharp;
 using System.Text.Json;
 
 namespace Keyfactor.Extensions.CAPlugin.NexusCertManager.models
@@ -17,6 +19,66 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager.models
             else
             {
                 throw new Exception($"The request is missing a {rdn} value");
+            }
+        }
+
+        public static int GetStatusCodeFromNexusCADescription(string status)
+        {
+            switch (status)
+            {
+                case "issued":
+                case "approved":
+                case "expired":
+                case "active":
+                    return (int)EndEntityStatus.GENERATED;
+
+                case "processing":
+                case "reissue_pending":
+                case "pending": // Pending from DigiCert means it will be issued after validation
+                case "waiting_pickup":
+                case "needs_approval":
+                    return (int)EndEntityStatus.EXTERNALVALIDATION;
+
+                case "denied":
+                case "rejected":
+                case "canceled":
+                    return (int)EndEntityStatus.FAILED;
+
+                case "revoked":
+                    return (int)EndEntityStatus.REVOKED;
+                default:
+                    return (int)EndEntityStatus.NEW; // set the status to "NEW" for any unknown description; to be evaluated as neededs
+            }
+        }
+
+        public static int? GetRevocationReasonCodeFromNexusCADescription(string reason)
+        {
+            //from the NexusCA API docs:
+            //* 0: Unspecified
+            //* 1: Key Compromise
+            //* 3: Affiliation Changed
+            //* 4: Superseded
+            //* 5: Cessation Of Operation
+            //* 6: Certificate Hold
+            //* 9: Privilege Withdrawn
+
+            switch (reason.ToLower())
+            {
+                case "key compromise":
+                    return (int)RevocationReason.KeyCompromise;
+                case "affiliation changed":
+                    return (int)RevocationReason.AffiliationChanged;
+                case "superseded":
+                    return (int)RevocationReason.Superseded;
+                case "cessation of operation":
+                    return (int)RevocationReason.CessationOfOperation;
+                case "certificate hold":
+                    return (int)RevocationReason.CertificateHold;
+                case "privilege withdrawn":
+                    return (int)RevocationReason.PrivilegeWithdrawn;
+                default:
+                    return (int)RevocationReason.Unspecified;
+
             }
         }
     }
@@ -84,7 +146,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager.models
         /// Handles binary certificate responses (PKCS#7, DER, PEM)
         /// Use for POST /certificates/pkcs10 and similar endpoints
         /// </summary>
-        public static IssueCertificateBinaryResponse HandleCertificateBinaryResponse(RestResponse response)
+        public static CertificateBinaryResponse HandleCertificateBinaryResponse(RestResponse response)
         {
             // Check if response is JSON (error response)
             var contentType = response.ContentType;
@@ -125,7 +187,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager.models
                 h.Name.Equals("certId", StringComparison.OrdinalIgnoreCase));
             string certId = certIdHeader?.Value?.ToString();
 
-            return new IssueCertificateBinaryResponse
+            return new CertificateBinaryResponse
             {
                 CertificateData = binaryData,
                 CertId = certId,
@@ -169,4 +231,6 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager.models
             };
         }
     }
+
+
 }
