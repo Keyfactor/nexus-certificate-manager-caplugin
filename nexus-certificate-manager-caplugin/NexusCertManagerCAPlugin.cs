@@ -30,11 +30,22 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 
         public void Initialize(IAnyCAPluginConfigProvider configProvider, ICertificateDataReader certificateDataReader)
         {
-            _certificateDataReader = certificateDataReader;
-            string rawConfig = JsonConvert.SerializeObject(configProvider.CAConnectionData);
-            _config = JsonConvert.DeserializeObject<NexusCertManagerCAPluginConfig>(rawConfig);
+            LogPluginVersion();
 
+            string rawConfig = JsonConvert.SerializeObject(configProvider.CAConnectionData);
+            _logger.LogTrace($"serialized configuration values: \n{rawConfig}\n");
+            _config = JsonConvert.DeserializeObject<NexusCertManagerCAPluginConfig>(rawConfig);
             _client = new NexusCertManagerClient(_config.Host, _config.AuthCertPath, _config.AuthCertPassword); // need to set the values            
+            _certificateDataReader = certificateDataReader;
+        }
+
+        private void LogPluginVersion()
+        {
+            var targetAssembly = typeof(NexusCertManagerCAPlugin).Assembly;
+            var assemblyName = targetAssembly?.GetName();
+            var version = assemblyName?.Version;
+            _logger.LogTrace("Keyfactor CA Gateway Plugin for Nexus Certificate Manager");
+            _logger.LogTrace($"{assemblyName?.Name ?? "unknown"} v{version}");
         }
 
         /// <summary>
@@ -100,22 +111,26 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             _logger.MethodEntry();
             try
             {
+                _logger.LogTrace($"getting certificate details for certId: {caRequestID}");
                 var certDetails = await _client.GetCertificateDetails(caRequestID);
+
+                _logger.LogTrace($"download certificate with ID: {caRequestID}");
                 var certContent = await _client.DownloadCertificate(caRequestID);
 
                 var cert = new AnyCAPluginCertificate()
                 {
                     CARequestID = caRequestID,
                     Certificate = certContent.Base64EncodedCertificateData,
-                    ProductID = certDetails.Certificate.CertId,                    
-                    Status = Helpers.GetStatusCodeFromNexusCADescription(certDetails.Certificate.Status),                    
+                    ProductID = certDetails.Certificate.CertId,
+                    Status = Helpers.GetStatusCodeFromNexusCADescription(certDetails.Certificate.Status),
                 };
-                if (cert.Status == (int)EndEntityStatus.REVOKED) {
+                if (cert.Status == (int)EndEntityStatus.REVOKED)
+                {
                     cert.RevocationDate = certDetails.Certificate.RevocationTime;
                     cert.RevocationReason = Helpers.GetRevocationReasonCodeFromNexusCADescription(certDetails.Certificate.Reason);
                 }
                 return cert;
-                                   
+
             }
             catch (Exception ex)
             {

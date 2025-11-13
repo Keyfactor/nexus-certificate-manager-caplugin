@@ -52,7 +52,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             _restClient = new RestClient(options);
         }
 
-        public async Task<CertificateBinaryResponse> Enroll(string csr)
+        public async Task<CertificateBinaryResponse> Enroll(string csr, CancellationToken ct = new CancellationToken())
         {
             _logger.MethodEntry();
             var req = new RestRequest(ApiEndpoints.ENROLL, Method.Post);
@@ -63,7 +63,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             try
             {
                 _logger.LogTrace($"submitting request to the endpoint '{_restClient.BuildUri(req)}'");
-                var response = await _restClient.ExecuteAsync(req);
+                var response = await _restClient.ExecuteAsync(req, ct);
                 _logger.LogTrace($"recieved a response, parsing the result");
                 var result = RestSharpResponseHandler.HandleCertificateBinaryResponse(response);
                 return result;
@@ -76,7 +76,14 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             finally { _logger.MethodExit(); }
         }
 
-        public async Task<CertificateDetailsResponse> GetCertificateDetails(string certId)
+        /// <summary>
+        /// Returns detailed information about a certificate
+        /// </summary>
+        /// <param name="certId">The certificate ID on the Nexus Certificate Manager</param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
+        /// <exception cref="CmApiException"></exception>
+        public async Task<CertificateDetailsResponse> GetCertificateDetails(string certId, CancellationToken ct = new CancellationToken())
         {
             _logger.MethodEntry();
             try
@@ -84,7 +91,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                 var endpoint = ApiEndpoints.CERTDETAILS(certId);
                 _logger.LogTrace($"performing the GET request for endpoint {endpoint}");
 
-                var res = await _restClient.GetAsync<CertificateDetailsResponse>(endpoint);
+                var res = await _restClient.GetAsync<CertificateDetailsResponse>(endpoint, ct);
                 _logger.LogTrace($"received a response; message: {res.Message}, error: {res.Error}");
                 if (res.IsError) throw new CmApiException(res.Error, res.Message);
                 return res;
@@ -97,7 +104,20 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             finally { _logger.MethodExit(); }
         }
 
-        public async Task<CertificateBinaryResponse> DownloadCertificate(string certId, string format = "application/pkcs7-mime")
+        /// <summary>
+        /// Downloads the contents of a certificate
+        /// </summary>
+        /// <param name="certId">The certificate ID on the Nexus Certificate Manager</param>
+        /// <param name="format">if provided, should be one of: 
+        /// "application/zip"
+        /// "application/pkix-cert"
+        /// "application/pkcs7-mime" (default)
+        /// "application/pem-certificate-chain"
+        /// "application/pem-certificate-chain;depth=<value>"        
+        /// </param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
+        public async Task<CertificateBinaryResponse> DownloadCertificate(string certId, string format = "application/pkcs7-mime", CancellationToken ct = new CancellationToken())
         {
             _logger.MethodEntry();
             try 
@@ -107,7 +127,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                 req.AddHeader("Accept", format);
                 
                 _logger.LogTrace($"performing the GET request for endpoint {endpoint}");
-                var res = await _restClient.GetAsync(req);
+                var res = await _restClient.GetAsync(req, ct);
                 _logger.LogTrace($"recieved a response.  status code: {res.StatusCode}");
                 var response = RestSharpResponseHandler.HandleCertificateBinaryResponse(res);
                 return response;
@@ -121,14 +141,26 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             finally { _logger.MethodExit(); }
         }
 
-        public Task RevokeCertificate(string certId)
+        /// <summary>
+        /// Sends a request to revoke a certificate
+        /// </summary>
+        /// <param name="certId">The certificate ID on the Nexus Certificate Manager</param>
+        /// <param name="reason">The reason code</param>
+        /// <param name="ct">Cancellation Token</param>        
+        public async Task RevokeCertificate(string certId, int reason, CancellationToken ct = new CancellationToken())
         {
             _logger.MethodEntry();
             try
             {
                 var endpoint = ApiEndpoints.REVOKE;
-                var req = new RevokeCertificateRequest();
-                throw new NotImplementedException(); ///
+
+                var body = new RevokeCertificateRequest() { CertId = new List<string> { certId }, Reason = reason };
+                var req = new RestRequest(endpoint, Method.Post);
+                req.AddJsonBody(body);
+                
+                _logger.LogTrace($"sending a request to {endpoint} to revoke certificate with ID {certId} and reason code {reason}");
+                var res = await _restClient.PostAsync<ApiResponse>(req, ct);
+                _logger.LogTrace($"response: {res.Message}");
             }
             catch (Exception ex)
             {
@@ -137,7 +169,12 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             }
             finally { _logger.MethodExit(); }
         }
-
+        /// <summary>
+        /// Returns a list of certificates
+        /// </summary>
+        /// <param name="req"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         public async Task<CertificateListResponse> GetCertificateList(ListCertificatesRequest req, CancellationToken ct)
         {
             _logger.MethodEntry();
