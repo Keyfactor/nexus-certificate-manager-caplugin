@@ -12,6 +12,7 @@
         //values
         public const string APIPATH = "pgwy/api";
         public const string PRODUCTID = "NexusCM";
+        public const string PKCS7MIMETYPE = "application/pkcs7-mime";
     }
 
     public static class ApiEndpoints 

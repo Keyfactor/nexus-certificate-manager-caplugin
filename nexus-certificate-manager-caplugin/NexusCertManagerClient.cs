@@ -56,7 +56,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         {
             _logger.MethodEntry();
             var req = new RestRequest(ApiEndpoints.ENROLL, Method.Post);
-            req.AddHeader("Accept", "application/pkcs7-mime"); 
+            req.AddHeader("Accept", Constants.PKCS7MIMETYPE); 
             req.AddParameter("pkcs10", csr);
             _logger.LogTrace($"preparing the request for enrollment.");
 
@@ -175,7 +175,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         /// <param name="req"></param>
         /// <param name="ct"></param>
         /// <returns></returns>
-        public async Task<CertificateListResponse> GetCertificateList(ListCertificatesRequest req, CancellationToken ct)
+        public async Task<CertificateListResponse> GetCertificateList(ListCertificatesRequest req = null, CancellationToken ct = new CancellationToken())
         {
             _logger.MethodEntry();
             try
