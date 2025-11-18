@@ -9,6 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docsource", "docsource", "{
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4FA0BDF6-B41E-4E00-805F-AE79B894784A}"
 	ProjectSection(SolutionItems) = preProject
+		CHANGELOG.md = CHANGELOG.md
 		manifest.json = manifest.json
 	EndProjectSection
 EndProject

@@ -422,8 +422,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         /// <param name="connectionInfo"></param>
         /// <returns>Task.CompletedTask</returns>
         public Task ValidateProductInfo(EnrollmentProductInfo productInfo, Dictionary<string, object> connectionInfo)
-        {
-            // we are using a single prodi
+        {            
             return Task.CompletedTask;
         }
     }
