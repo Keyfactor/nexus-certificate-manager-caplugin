@@ -27,7 +27,9 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         {
             _logger = LogHandler.GetClassLogger(typeof(NexusCertManagerClient));
             _host = hostAndPort;
-            _authCertPath = authCertPath;
+            _logger.LogTrace($"about to clean up the file path: {authCertPath}");
+            _authCertPath = authCertPath.Replace(@"\\", @"\"); // remove the double encoded slashes
+            _logger.LogTrace($"clean cert path: {_authCertPath}");
 
             var url = _host.EndsWith(Constants.APIPATH) ? _host : _host.TrimEnd('/') + "/" + Constants.APIPATH;
             _logger.LogTrace($"full api path: {url}");
@@ -49,7 +51,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 
             var clientCerts = new X509CertificateCollection();
             clientCerts.Add(clientCertificate);
-            var options = new RestClientOptions(url) { ClientCertificates = clientCerts };
+            var options = new RestClientOptions(url) { ClientCertificates = clientCerts, RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true };
             _restClient = new RestClient(options);
         }
 
@@ -211,7 +213,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                 if (res.IsSuccessStatusCode) return true;
             }
             catch (Exception ex) {
-                _logger.LogError($"the attempt to ping the server failed: {ex.Message}");                
+                _logger.LogError($"the attempt to ping the server failed: {LogHandler.FlattenException(ex)}");                
             }
             finally { _logger.MethodExit(); }
             return false;

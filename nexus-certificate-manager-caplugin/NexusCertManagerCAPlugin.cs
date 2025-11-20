@@ -36,7 +36,8 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             string rawConfig = JsonConvert.SerializeObject(configProvider.CAConnectionData);
             _logger.LogTrace($"serialized configuration values: \n{rawConfig}\n");
             _config = JsonConvert.DeserializeObject<NexusCertManagerCAPluginConfig>(rawConfig);
-            _client = new NexusCertManagerClient(_config.Host, _config.AuthCertPath, _config.AuthCertPassword); // need to set the values            
+            _logger.LogTrace($"deserialized the configuration:\nAuthCertPath: {_config.AuthCertificatePath}\nHost: {_config.Host}\nAuthCertPassword: {_config.AuthCertPassword}");
+            _client = new NexusCertManagerClient(_config.Host, _config.AuthCertificatePath, _config.AuthCertPassword); // need to set the values            
             _certificateDataReader = certificateDataReader;
         }
 

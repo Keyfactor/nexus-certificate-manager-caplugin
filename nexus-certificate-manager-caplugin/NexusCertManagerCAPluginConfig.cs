@@ -16,7 +16,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         public string Host { get; set; }
 
         [JsonPropertyName(Constants.AUTHCERTPATH)]
-        public string AuthCertPath { get; set; }
+        public string AuthCertificatePath { get; set; }
 
         [JsonPropertyName(Constants.AUTHCERTPASSWORD)]
         public string AuthCertPassword { get; set; }
