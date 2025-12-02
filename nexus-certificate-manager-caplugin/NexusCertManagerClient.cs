@@ -10,7 +10,6 @@ using Keyfactor.Extensions.CAPlugin.NexusCertManager.models;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
 using RestSharp;
-using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
