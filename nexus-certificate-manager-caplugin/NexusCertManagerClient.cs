@@ -10,6 +10,7 @@ using Keyfactor.Extensions.CAPlugin.NexusCertManager.models;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
 using RestSharp;
+using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
@@ -178,10 +179,11 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             try
             {
                 var endpoint = ApiEndpoints.REVOKE;
-
-                var body = new RevokeCertificateRequest() { CertId = new List<string> { certId }, Reason = reason };
+                                
                 var req = new RestRequest(endpoint, Method.Post);
-                req.AddJsonBody(body);
+                req.AddHeader("Content-Type", "application/x-www-form-urlencoded");
+                req.AddParameter("certid", certId);
+                req.AddParameter("reason", reason);
 
                 _logger.LogTrace($"sending a request to {endpoint} to revoke certificate with ID {certId} and reason code {reason}");
                 var res = await _restClient.PostAsync<ApiResponse>(req, ct);

@@ -366,9 +366,6 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager.models
 
         [JsonPropertyName("reason")]
         public int Reason { get; set; }
-
-        [JsonPropertyName("signature")]
-        public string Signature { get; set; }
     }
 
     public class RemoveCertificatesRequest
