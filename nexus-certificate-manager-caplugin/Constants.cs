@@ -21,6 +21,13 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         public const string APIPATH = "pgwy/api";
         public const string PRODUCTID = "NexusCM";
         public const string PKCS7MIMETYPE = "application/pkcs7-mime";
+        public const string PEMCHAIN = "application/pem-certificate-chain";
+
+        public const string MEDIATYPE_PKCS10 = "pkcs10";
+        public const string MEDIATYPE_PKCS12 = "pkcs12";
+        public const string MEDIATYPE_SMARTCARD = "smartcard";
+        public const string MEDIATYPE_ATTRIBUTECERT = "attributecertificate";
+        public const string MEDIATYPE_DATA = "data";
     }
 
     public static class ApiEndpoints 

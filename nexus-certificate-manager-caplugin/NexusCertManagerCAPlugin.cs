@@ -254,14 +254,25 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 
                 certList.Certificates.ForEach(cert =>
                 {
+                    _logger.LogTrace("- cert details - ");
+                    _logger.LogTrace($"certId: {cert.CertId}");
+                    _logger.LogTrace($"status: {cert.Status}");
+                    _logger.LogTrace($"revocation time: {cert.RevocationTime}");
+                    _logger.LogTrace($"serial number: {cert.CertificateSerialNumber}");
+                    _logger.LogTrace($"reason: {cert.Reason}");
+
                     var updatedCert = new AnyCAPluginCertificate
                     {
                         CARequestID = cert.CertId,
                         ProductID = Constants.PRODUCTID,
                         Status = Helpers.GetStatusCodeFromNexusCADescription(cert.Status),
                         RevocationDate = cert.RevocationTime,
-                        RevocationReason = Helpers.GetRevocationReasonCodeFromNexusCADescription(cert.Reason)
+                        
                     };
+                    if (!string.IsNullOrEmpty(cert.Reason)) {
+                        updatedCert.RevocationReason = Helpers.GetRevocationReasonCodeFromNexusCADescription(cert.Reason);
+                    }
+
                     updatedCerts.Add(updatedCert);
                 });
 
@@ -275,15 +286,18 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                         _logger.LogInformation("Nexus CA sync cancelled.");
                         cancelToken.ThrowIfCancellationRequested();
                     }
-                    var certContent = await _client.DownloadCertificate(cert.CARequestID, Constants.PKCS7MIMETYPE, cancelToken);
-                    cert.Certificate = certContent.Base64EncodedCertificateData;
+                    var certContent = await _client.DownloadCertificate(cert.CARequestID, Constants.PEMCHAIN, cancelToken);
+                    _logger.LogTrace("getting the leaf certificate");
+                    cert.Certificate = Helpers.GetEndEntityCertificate(certContent.Base64EncodedCertificateData, _logger);
+                    _logger.LogTrace($"leaf cert: {cert.Certificate}");
                 }
 
                 _logger.LogTrace($"got the content for {updatedCerts.Count} certs");
                 _logger.LogTrace($"updating the database..");
-
+                
                 foreach (var cert in updatedCerts)
                 {
+                    _logger.LogTrace($"adding cert with id: {cert.CARequestID} and productID {cert.ProductID}");
                     blockingBuffer.Add(cert, cancelToken);
                 }
 

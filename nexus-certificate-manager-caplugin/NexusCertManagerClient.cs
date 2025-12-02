@@ -58,15 +58,34 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         public async Task<CertificateBinaryResponse> Enroll(string csr, CancellationToken ct = new CancellationToken())
         {
             _logger.MethodEntry();
-            var req = new RestRequest(ApiEndpoints.ENROLL, Method.Post);
-            req.AddHeader("Accept", Constants.PKCS7MIMETYPE); 
-            req.AddParameter("pkcs10", csr);
             _logger.LogTrace($"preparing the request for enrollment.");
+
+            var req = new RestRequest(ApiEndpoints.ENROLL, Method.Post);
+            req.AddHeader("Accept", Constants.PEMCHAIN);
+            req.AddParameter("pkcs10", csr);
+            var procname = string.Empty;
+            try
+            {
+                _logger.LogTrace("getting first available proc name for pkcs10 to submit with request..");
+                var procs = await GetProceduresByMediaType(Constants.MEDIATYPE_PKCS10);
+                procname = procs?.First();
+                if (!string.IsNullOrEmpty(procname))
+                {
+                    req.AddParameter("procname", procname);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"unable to find a procedure for the media type {Constants.MEDIATYPE_PKCS10}: {LogHandler.FlattenException(ex)}");
+                _logger.LogTrace("we will attempt to perform enrollment without specifying procedure ID; relying on the default procedure to be configured");
+            }
 
             try
             {
                 _logger.LogTrace($"submitting request to the endpoint '{_restClient.BuildUri(req)}'");
                 var response = await _restClient.ExecuteAsync(req, ct);
+                _logger.LogTrace($"response status code: {response.StatusCode}");
+                _logger.LogTrace($"response content: {response.Content}");
                 _logger.LogTrace($"recieved a response, parsing the result");
                 var result = RestSharpResponseHandler.HandleCertificateBinaryResponse(response);
                 return result;
@@ -120,23 +139,26 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         /// </param>
         /// <param name="ct"></param>
         /// <returns></returns>
-        public async Task<CertificateBinaryResponse> DownloadCertificate(string certId, string format = "application/pkcs7-mime", CancellationToken ct = new CancellationToken())
+        public async Task<CertificateBinaryResponse> DownloadCertificate(string certId, string format = Constants.PEMCHAIN, CancellationToken ct = new CancellationToken())
         {
             _logger.MethodEntry();
-            try 
-            {                
+            try
+            {
                 var endpoint = ApiEndpoints.DOWNLOADCERT(certId);
                 var req = new RestRequest(endpoint, Method.Get);
                 req.AddHeader("Accept", format);
-                
+                _logger.LogTrace($"accept header: {format}");
                 _logger.LogTrace($"performing the GET request for endpoint {endpoint}");
                 var res = await _restClient.GetAsync(req, ct);
                 _logger.LogTrace($"recieved a response.  status code: {res.StatusCode}");
+                _logger.LogTrace($"content: {res.Content}");
+
                 var response = RestSharpResponseHandler.HandleCertificateBinaryResponse(res);
+                _logger.LogTrace($"parsed content: {response.Base64EncodedCertificateData}");
                 return response;
 
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 _logger.LogError($"an error occurred when attempting to download the certificate: {ex.Message}");
                 throw;
@@ -160,7 +182,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                 var body = new RevokeCertificateRequest() { CertId = new List<string> { certId }, Reason = reason };
                 var req = new RestRequest(endpoint, Method.Post);
                 req.AddJsonBody(body);
-                
+
                 _logger.LogTrace($"sending a request to {endpoint} to revoke certificate with ID {certId} and reason code {reason}");
                 var res = await _restClient.PostAsync<ApiResponse>(req, ct);
                 _logger.LogTrace($"response: {res.Message}");
@@ -198,22 +220,54 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 
         }
         /// <summary>
+        /// retreives the procedures associated with the provided media type value
+        /// </summary>
+        /// <param name="mediaType"></param>
+        /// <returns>a list of the procedure IDs</returns>
+        public async Task<List<string>> GetProceduresByMediaType(string mediaType = Constants.MEDIATYPE_PKCS10)
+        {
+            _logger.MethodEntry();
+            _logger.LogTrace($"getting available procedures for media type: {mediaType}");
+
+            try
+            {
+                var endpoint = ApiEndpoints.LISTPROCEDURES;
+                var req = new RestRequest(endpoint);
+                req.AddQueryParameter("mediaType", Constants.MEDIATYPE_PKCS10);
+                var res = await _restClient.GetAsync<ListProceduresResponse>(req);
+
+                var procedures = res.Procedures.Select(p => p.ProcId).ToList();
+                _logger.LogTrace($"successfully retrieved a list of {procedures.Count} procedures for mediaType {mediaType}");
+                return procedures;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"there was an error retrieving the procedures for mediaType {mediaType}: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+        }
+
+
+        /// <summary>
         /// This method calls the "/procedures" endpoint of the API
         /// The ping is successful if the server returns "200".  
         /// The content of the response is ignored
         /// </summary>
         /// <returns>A boolean indicating whether the server is reachable and responding.</returns>
-        public async Task<Boolean> PingServer() {
+        public async Task<Boolean> PingServer()
+        {
             _logger.MethodEntry();
-            try {
+            try
+            {
                 var endpoint = ApiEndpoints.LISTPROCEDURES;
                 _logger.LogTrace($"pinging the endpoint {endpoint} to verify server is accessible");
                 var req = new RestRequest(endpoint);
                 var res = await _restClient.GetAsync(req);
                 if (res.IsSuccessStatusCode) return true;
             }
-            catch (Exception ex) {
-                _logger.LogError($"the attempt to ping the server failed: {LogHandler.FlattenException(ex)}");                
+            catch (Exception ex)
+            {
+                _logger.LogError($"the attempt to ping the server failed: {LogHandler.FlattenException(ex)}");
             }
             finally { _logger.MethodExit(); }
             return false;

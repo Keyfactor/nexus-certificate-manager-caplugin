@@ -276,10 +276,16 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager.models
 
     public class CertificateBinaryResponse
     {
+
         /// <summary>
         /// The binary certificate data (DER, PEM, or PKCS#7 depending on Accept header)
         /// </summary>
         public byte[] CertificateData { get; set; }
+
+        /// <summary>
+        /// The PEM cert content, if retrieved in PEM format
+        /// </summary>
+        public string PEMString { get; set; }
 
         /// <summary>
         /// The CertId of the issued certificate from the response header
@@ -306,7 +312,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager.models
         /// </summary>
         public bool IsDer => ContentType?.Contains("pkix-cert") == true;
 
-        public string Base64EncodedCertificateData => Convert.ToBase64String(CertificateData);
+        public string Base64EncodedCertificateData => IsPem ? PEMString : Convert.ToBase64String(CertificateData);
 
     }
 
@@ -451,6 +457,21 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager.models
 
         [JsonPropertyName("dataToSign")]
         public string DataToSign { get; set; }
+    }
+
+    public class ListProceduresResponse : ApiResponse
+    {
+        [JsonPropertyName("procedures")]
+        public List<ProceduresResponse> Procedures { get; set; }
+    }
+
+    public class ProceduresResponse
+    {
+        [JsonPropertyName("procid")]
+        public string ProcId { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
     }
 
     #endregion
