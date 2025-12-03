@@ -6,10 +6,14 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NexusCertManagerCAPlugin", "nexus-certificate-manager-caplugin\NexusCertManagerCAPlugin.csproj", "{5107B3B8-4F3A-4A1B-BE0E-AF6A1A0B2995}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docsource", "docsource", "{40A1F9A6-A56D-4A38-8CAE-2E23676AE243}"
+	ProjectSection(SolutionItems) = preProject
+		configuration.md = configuration.md
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4FA0BDF6-B41E-4E00-805F-AE79B894784A}"
 	ProjectSection(SolutionItems) = preProject
 		CHANGELOG.md = CHANGELOG.md
+		integration-manifest.json = integration-manifest.json
 		manifest.json = manifest.json
 	EndProjectSection
 EndProject
