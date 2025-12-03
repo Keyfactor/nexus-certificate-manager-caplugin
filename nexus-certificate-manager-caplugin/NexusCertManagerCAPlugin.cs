@@ -14,6 +14,12 @@ using Keyfactor.PKI.Enums.EJBCA;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
+using System;
+using System.Threading;
+using System.IO;
 
 namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 {

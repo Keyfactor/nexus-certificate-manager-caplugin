@@ -11,6 +11,8 @@ using Keyfactor.PKI.X509;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Tls;
 using RestSharp;
+using System;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
