@@ -12,7 +12,7 @@
   "release_project": "nexus-certificate-manager-caplugin/NexusCertManagerCAPlugin.csproj",
   "about": {
     "carest": {
-      "product_ids": ["NexusCM"],
+      "product_ids": [ "NexusCM" ],
       "ca_plugin_config": [
         {
           "name": "Host",
@@ -20,7 +20,7 @@
         },
         {
           "name": "AuthCertificatePath",
-          "description": "The path on the AnyCA Gateway host where the PFX certificate that will be used for authentication can be found. example: C:\\Program Files\\Keyfactor\\Keyfactor AnyCA Gateway\\AnyGatewayREST\\net8.0\\my_auth_cert.pfx",
+          "description": "The path on the AnyCA Gateway host where the PFX certificate that will be used for authentication can be found. example: 'C:\\Program Files\\Keyfactor\\Keyfactor AnyCA Gateway\\AnyGatewayREST\\net8.0\\my_auth_cert.pfx'"
         },
         {
           "name": "AuthCertPassword",
@@ -28,10 +28,10 @@
         },
         {
           "name": "Enabled",
-          "description": "Flag to Enable or Disable gateway functionality. Disabling is primarily used to allow creation of the CA prior to configuration information being available."
+          "description": "Flag to enable or disable gateway functionality. Disabling is primarily used to allow creation of the CA prior to configuration information being available."
         }
       ],
-      "enrollment_config": []      
+      "enrollment_config": []
     }
   }
 }
