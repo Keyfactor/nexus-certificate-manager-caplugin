@@ -227,7 +227,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                 _logger.LogTrace($"attempting to revoke certificate with id {caRequestID} and serial number {hexSerialNumber} with reason code {revocationReason}");
                 await _client.RevokeCertificate(caRequestID, (int)revocationReason);
                 _logger.LogTrace("successfully revoked certificate");
-                return (int)revocationReason;
+                return (int)EndEntityStatus.REVOKED;
             }
             catch (Exception ex)
             {
