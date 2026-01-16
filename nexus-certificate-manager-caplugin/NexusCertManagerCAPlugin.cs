@@ -383,7 +383,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                 }
                 catch (Exception ex)
                 {
-                    errors.Add("unable to open the certificate with the provided password");
+                    errors.Add($"unable to open the certificate with the provided password: {LogHandler.FlattenException(ex)}");
                 }
             }
 
