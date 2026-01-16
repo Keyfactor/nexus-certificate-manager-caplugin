@@ -253,7 +253,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 
             try
             {
-                // retreive the list of certs from Nexus CM
+                // retrieve the list of certs from Nexus CM
                 _logger.LogTrace("attempting to retrieve the list of cert names from Nexus CM");
                 var certList = await _client.GetCertificateList(null, cancelToken);
                 _logger.LogTrace($"successfully returned {certList.SearchHits} results.");
