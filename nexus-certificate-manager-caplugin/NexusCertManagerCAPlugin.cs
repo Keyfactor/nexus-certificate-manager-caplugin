@@ -239,7 +239,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         }
 
         /// <summary>
-        /// Synchronize gets the list of certs from the CA and updates the status of each known cert to the latest; and adds missing cert info to the database        /// 
+        /// Synchronize gets the list of certs from the CA and updates the status of each known cert to the latest, and adds missing cert info to the database.
         /// </summary>
         /// <param name="blockingBuffer">the database reader, passed by framework</param>
         /// <param name="lastSync">the time of last sync</param>
