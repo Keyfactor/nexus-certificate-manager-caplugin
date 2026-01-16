@@ -22,7 +22,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 
     public class NexusCertManagerClient
     {
-        ILogger _logger;
+        private readonly ILogger _logger;
         private RestClient _restClient;
         private string _host;
         private string _authCertPath;
