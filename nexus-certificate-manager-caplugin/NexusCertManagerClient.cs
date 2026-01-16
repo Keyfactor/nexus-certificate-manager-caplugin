@@ -73,7 +73,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             {
                 _logger.LogTrace("getting first available proc name for pkcs10 to submit with request..");
                 var procs = await GetProceduresByMediaType(Constants.MEDIATYPE_PKCS10);
-                procname = procs?.First();
+                procname = procs?.FirstOrDefault();
                 if (!string.IsNullOrEmpty(procname))
                 {
                     req.AddParameter("procname", procname);
