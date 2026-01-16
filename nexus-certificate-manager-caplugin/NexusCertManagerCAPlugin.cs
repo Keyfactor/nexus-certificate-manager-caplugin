@@ -20,6 +20,7 @@ using System.Linq;
 using System;
 using System.Threading;
 using System.IO;
+using System.Net.NetworkInformation;
 
 namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 {
@@ -258,8 +259,10 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                 var certList = await _client.GetCertificateList(null, cancelToken);
                 _logger.LogTrace($"successfully returned {certList.SearchHits} results.");
 
-                certList.Certificates.ForEach(cert =>
+                certList.Certificates.ForEach(async cert =>
                 {
+                    var dbStatus = -1;
+
                     _logger.LogTrace("- cert details - ");
                     _logger.LogTrace($"certId: {cert.CertId}");
                     _logger.LogTrace($"status: {cert.Status}");
@@ -278,8 +281,22 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                     if (!string.IsNullOrEmpty(cert.Reason)) {
                         updatedCert.RevocationReason = Helpers.GetRevocationReasonCodeFromNexusCADescription(cert.Reason);
                     }
+                    // check for an existing local entry
+                    try
+                    {
+                        _logger.LogTrace($"attempting to retreive status of cert with tracking id {cert.CertId} from the database");
+                        dbStatus = await _certificateDataReader.GetStatusByRequestID(cert.CertId);
+                    }
+                    catch
+                    {
+                        _logger.LogTrace($"tracking id {cert.CertId} was not found in the database.  it will be added.");
+                    }
 
-                    updatedCerts.Add(updatedCert);
+                    if (dbStatus == -1 || fullSync || (updatedCert.Status != dbStatus))
+                    {
+                        // if it is a new cert, if we are doing a full sync, or if the status changed; we add it to collection to be updated in the db
+                        updatedCerts.Add(updatedCert);
+                    }
                 });
 
                 // now get the cert content for each.. 
@@ -383,6 +400,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                 }
                 catch (Exception ex)
                 {
+                    _logger.LogTrace($"unable to open the certificate with the provided password: {LogHandler.FlattenException(ex)}");
                     errors.Add("unable to open the certificate with the provided password");
                 }
             }
