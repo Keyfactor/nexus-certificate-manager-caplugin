@@ -391,11 +391,12 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                     var certPassword = (string)connectionInfo[Constants.AUTHCERTPASSWORD];
 
                     // validate that it works
-                    var clientCertificate = new X509Certificate2(certPath, certPassword);
-
-                    var pub = clientCertificate.GetPublicKey();
-                    var pubString = Convert.ToBase64String(pub);
-                    _logger.LogTrace($"was able to successfully read the cert with the provided password.  public key: {pubString}");
+                    using (var clientCertificate = new X509Certificate2(certPath, certPassword))
+                    {
+                        var pub = clientCertificate.GetPublicKey();
+                        var pubString = Convert.ToBase64String(pub);
+                        _logger.LogTrace($"was able to successfully read the cert with the provided password.  public key: {pubString}");
+                    }
                 }
                 catch (Exception ex)
                 {
