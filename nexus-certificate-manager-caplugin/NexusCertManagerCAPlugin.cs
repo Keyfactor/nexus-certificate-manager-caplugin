@@ -344,7 +344,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                 try
                 {
                     // see if we can open the file for reading..
-                    using (var fs = new FileStream((string)connectionInfo[Constants.AUTHCERTPATH], FileMode.Open, FileAccess.Read))
+                    using (var _ = new FileStream((string)connectionInfo[Constants.AUTHCERTPATH], FileMode.Open, FileAccess.Read))
                     {
                         // if we get this far, we can
                         _logger.LogTrace($"successfully read the file at path {connectionInfo[Constants.AUTHCERTPATH]}");
