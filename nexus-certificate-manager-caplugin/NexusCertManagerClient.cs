@@ -91,7 +91,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                 var response = await _restClient.ExecuteAsync(req, ct);
                 _logger.LogTrace($"response status code: {response.StatusCode}");
                 _logger.LogTrace($"response content: {response.Content}");
-                _logger.LogTrace($"recieved a response, parsing the result");
+                _logger.LogTrace($"received a response, parsing the result");
                 var result = RestSharpResponseHandler.HandleCertificateBinaryResponse(response);
                 return result;
             }
