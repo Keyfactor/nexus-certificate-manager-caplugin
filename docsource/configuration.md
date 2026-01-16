@@ -17,7 +17,7 @@ In order to enroll certificates the Keyfactor Command server must trust the CA c
 
 ## CA Connection
 
-The certificate used by the gateway for authenticating into the Nexus Certificate Manager will need to be copied to a location on the Gateway Host that is accessble by the gateway service.  The Certificate Path 
+The certificate used by the gateway for authenticating into the Nexus Certificate Manager will need to be copied to a location on the Gateway Host that is accessible by the gateway service.  The Certificate Path 
 
 ## Certificate Template Creation Step
 

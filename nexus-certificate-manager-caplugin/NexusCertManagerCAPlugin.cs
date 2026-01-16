@@ -240,7 +240,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         }
 
         /// <summary>
-        /// Synchronize gets the list of certs from the CA and updates the status of each known cert to the latest; and adds missing cert info to the database        /// 
+        /// Synchronize gets the list of certs from the CA and updates the status of each known cert to the latest, and adds missing cert info to the database.
         /// </summary>
         /// <param name="blockingBuffer">the database reader, passed by framework</param>
         /// <param name="lastSync">the time of last sync</param>
@@ -254,7 +254,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 
             try
             {
-                // retreive the list of certs from Nexus CM
+                // retrieve the list of certs from Nexus CM
                 _logger.LogTrace("attempting to retrieve the list of cert names from Nexus CM");
                 var certList = await _client.GetCertificateList(null, cancelToken);
                 _logger.LogTrace($"successfully returned {certList.SearchHits} results.");
@@ -361,7 +361,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                 try
                 {
                     // see if we can open the file for reading..
-                    using (var fs = new FileStream((string)connectionInfo[Constants.AUTHCERTPATH], FileMode.Open, FileAccess.Read))
+                    using (var _ = new FileStream((string)connectionInfo[Constants.AUTHCERTPATH], FileMode.Open, FileAccess.Read))
                     {
                         // if we get this far, we can
                         _logger.LogTrace($"successfully read the file at path {connectionInfo[Constants.AUTHCERTPATH]}");

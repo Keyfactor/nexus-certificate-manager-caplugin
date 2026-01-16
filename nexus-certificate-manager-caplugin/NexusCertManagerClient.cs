@@ -22,7 +22,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 
     public class NexusCertManagerClient
     {
-        ILogger _logger;
+        private readonly ILogger _logger;
         private RestClient _restClient;
         private string _host;
         private string _authCertPath;
@@ -73,7 +73,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             {
                 _logger.LogTrace("getting first available proc name for pkcs10 to submit with request..");
                 var procs = await GetProceduresByMediaType(Constants.MEDIATYPE_PKCS10);
-                procname = procs?.First();
+                procname = procs?.FirstOrDefault();
                 if (!string.IsNullOrEmpty(procname))
                 {
                     req.AddParameter("procname", procname);
@@ -91,7 +91,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                 var response = await _restClient.ExecuteAsync(req, ct);
                 _logger.LogTrace($"response status code: {response.StatusCode}");
                 _logger.LogTrace($"response content: {response.Content}");
-                _logger.LogTrace($"recieved a response, parsing the result");
+                _logger.LogTrace($"received a response, parsing the result");
                 var result = RestSharpResponseHandler.HandleCertificateBinaryResponse(response);
                 return result;
             }

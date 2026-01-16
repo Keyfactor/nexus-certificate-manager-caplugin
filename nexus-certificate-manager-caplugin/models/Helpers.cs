@@ -61,7 +61,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager.models
                 case "revoked":
                     return (int)EndEntityStatus.REVOKED;
                 default:
-                    return (int)EndEntityStatus.NEW; // set the status to "NEW" for any unknown description; to be evaluated as neededs
+                    return (int)EndEntityStatus.NEW; // set the status to "NEW" for any unknown description; to be evaluated as needed
             }
         }
 
