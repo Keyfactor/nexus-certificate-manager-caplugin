@@ -57,6 +57,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             var clientCerts = new X509CertificateCollection();
             clientCerts.Add(clientCertificate);
             var options = new RestClientOptions(url) { ClientCertificates = clientCerts, RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true };
+            //var options = new RestClientOptions(url) { ClientCertificates = clientCerts };
             _restClient = new RestClient(options);
         }
 

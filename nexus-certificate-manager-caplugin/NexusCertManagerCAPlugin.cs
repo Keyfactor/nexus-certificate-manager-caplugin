@@ -20,7 +20,6 @@ using System.Linq;
 using System;
 using System.Threading;
 using System.IO;
-using System.Net.NetworkInformation;
 
 namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 {

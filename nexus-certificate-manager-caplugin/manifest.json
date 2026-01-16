@@ -2,7 +2,7 @@
   "extensions": {
     "Keyfactor.AnyGateway.Extensions.IAnyCAPlugin": {
       "NexusCAPlugin": {
-        "assemblypath": "../NexusCertManagerCAPlugin.dll",
+        "assemblypath": "NexusCertManagerCAPlugin.dll",
         "TypeFullName": "Keyfactor.Extensions.CAPlugin.NexusCertManager.NexusCertManagerCAPlugin"
       }
     }
