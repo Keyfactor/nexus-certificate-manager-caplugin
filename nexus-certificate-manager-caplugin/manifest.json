@@ -1,9 +1,9 @@
 {
   "extensions": {
     "Keyfactor.AnyGateway.Extensions.IAnyCAPlugin": {
-      "DigicertCAPlugin": {
-        "assemblypath": "DigicertCAPlugin.dll",
-        "TypeFullName": "Keyfactor.Extensions.CAPlugin.DigiCert.CertCentralCAPlugin"
+      "NexusCAPlugin": {
+        "assemblypath": "NexusCertManagerCAPlugin.dll",
+        "TypeFullName": "Keyfactor.Extensions.CAPlugin.NexusCertManager.NexusCertManagerCAPlugin"
       }
     }
   }
