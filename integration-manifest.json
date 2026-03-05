@@ -1,7 +1,7 @@
 {
     "$schema": "https://keyfactor.github.io/v2/integration-manifest-schema.json",
     "integration_type": "anyca-plugin",
-    "name": "Nexus Certificate Maanager AnyCA REST Gateway Plugin",
+    "name": "Nexus Certificate Manager AnyCA REST Gateway Plugin",
     "status": "prototype",
     "support_level": "kf-community",
     "link_github": false,
@@ -30,7 +30,7 @@
                 },
                 {
                     "name": "Enabled",
-                    "description": "Flag to Enable or Disable gateway functionality. Disabling is primarily used to allow creation of the CA prior to configuration information being available."
+                    "description": "Enables or disables gateway functionality. Disable to create the CA before configuration information is available."
                 }
             ],
             "enrollment_config": []
