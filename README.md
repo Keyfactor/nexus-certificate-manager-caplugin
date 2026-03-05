@@ -1,5 +1,5 @@
 <h1 align="center" style="border-bottom: none">
-    Nexus Certificate Maanager   Gateway AnyCA Gateway REST Plugin
+    Nexus Certificate Manager   Gateway AnyCA Gateway REST Plugin
 </h1>
 
 <p align="center">
@@ -34,17 +34,17 @@
 </p>
 
 
-The Nexus Certificate Manager AnyCA REST plugin extends the capabilities of the Nexus Certificate Manager product to Keyfactor Command via the Keyfactor AnyCA Gateway REST. The plugin represents a fully featured AnyCA REST Plugin with the following capabilies:
+The Nexus Certificate Manager AnyCA REST plugin connects Nexus Certificate Manager to Keyfactor Command via the AnyCA Gateway REST. It supports the following capabilities:
 * Certificate Synchronization
 * Certificate Enrollment
 * Certificate Revocation
 
 ## Compatibility
 
-The Nexus Certificate Maanager   Gateway AnyCA Gateway REST plugin is compatible with the Keyfactor AnyCA Gateway REST 25.2.0 and later.
+The Nexus Certificate Manager   Gateway AnyCA Gateway REST plugin is compatible with the Keyfactor AnyCA Gateway REST 25.2.0 and later.
 
 ## Support
-The Nexus Certificate Maanager   Gateway AnyCA Gateway REST plugin is open source and there is **no SLA**. Keyfactor will address issues as resources become available. Keyfactor customers may request escalation by opening up a support ticket through their Keyfactor representative. 
+The Nexus Certificate Manager   Gateway AnyCA Gateway REST plugin is open source and there is **no SLA**. Keyfactor will address issues as resources become available. Keyfactor customers may request escalation by opening up a support ticket through their Keyfactor representative. 
 
 > To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
 
@@ -58,7 +58,7 @@ The Nexus Certificate Maanager   Gateway AnyCA Gateway REST plugin is open sourc
 
 1. Install the AnyCA Gateway REST per the [official Keyfactor documentation](https://software.keyfactor.com/Guides/AnyCAGatewayREST/Content/AnyCAGatewayREST/InstallIntroduction.htm).
 
-2. On the server hosting the AnyCA Gateway REST, download and unzip the latest [Nexus Certificate Maanager   Gateway AnyCA Gateway REST plugin](https://github.com/Keyfactor/nexus-certificate-manager-caplugin/releases/latest) from GitHub.
+2. On the server hosting the AnyCA Gateway REST, download and unzip the latest [Nexus Certificate Manager   Gateway AnyCA Gateway REST plugin](https://github.com/Keyfactor/nexus-certificate-manager-caplugin/releases/latest) from GitHub.
 
 3. Copy the unzipped directory (usually called `net6.0` or `net8.0`) to the Extensions directory:
 
@@ -69,11 +69,11 @@ The Nexus Certificate Maanager   Gateway AnyCA Gateway REST plugin is open sourc
     Program Files\Keyfactor\AnyCA Gateway\AnyGatewayREST\net8.0\Extensions
     ```
 
-    > The directory containing the Nexus Certificate Maanager   Gateway AnyCA Gateway REST plugin DLLs (`net6.0` or `net8.0`) can be named anything, as long as it is unique within the `Extensions` directory.
+    > The directory containing the Nexus Certificate Manager   Gateway AnyCA Gateway REST plugin DLLs (`net6.0` or `net8.0`) can be named anything, as long as it is unique within the `Extensions` directory.
 
 4. Restart the AnyCA Gateway REST service.
 
-5. Navigate to the AnyCA Gateway REST portal and verify that the Gateway recognizes the Nexus Certificate Maanager   Gateway plugin by hovering over the ⓘ symbol to the right of the Gateway on the top left of the portal.
+5. Navigate to the AnyCA Gateway REST portal and verify that the Gateway recognizes the Nexus Certificate Manager   Gateway plugin by hovering over the ⓘ symbol to the right of the Gateway on the top left of the portal.
 
 ## Configuration
 
@@ -81,7 +81,7 @@ The Nexus Certificate Maanager   Gateway AnyCA Gateway REST plugin is open sourc
 
     * **Gateway Registration**
 
-        In order to enroll certificates the Keyfactor Command server must trust the CA chain. Once you identify your Root and/or Subordinate CA used by the Nexus Certificate Manager platform, make sure to download and import the certificate chain into the Command Server certificate store
+        To enroll certificates, the Keyfactor Command server must trust the CA chain. Identify the Root and/or Subordinate CA used by Nexus Certificate Manager, then download and import the certificate chain into the Command Server certificate store.
 
     * **CA Connection**
 
@@ -99,7 +99,7 @@ The Nexus Certificate Maanager   Gateway AnyCA Gateway REST plugin is open sourc
 
 ## CA Connection
 
-The certificate used by the gateway for authenticating into the Nexus Certificate Manager will need to be copied to a location on the Gateway Host that is accessible by the gateway service.  The Certificate Path
+The certificate used by the gateway to authenticate into Nexus Certificate Manager must be copied to a location on the Gateway Host accessible by the gateway service.
 
 
 ## License
