@@ -1,37 +1,39 @@
 {
-  "$schema": "https://keyfactor.github.io/v2/integration-manifest-schema.json",
-  "integration_type": "anyca-plugin",
-  "name": "Nexus Certificate Maanager AnyCA REST Gateway Plugin",
-  "status": "prototype",
-  "support_level": "kf-community",
-  "link_github": false,
-  "update_catalog": false,
-  "description": "Nexus Certificate Manager plugin for the AnyCA REST Gateway framework",
-  "gateway_framework": "25.2.0",
-  "release_dir": "nexus-certificate-manager-caplugin/bin/Release",
-  "release_project": "nexus-certificate-manager-caplugin/NexusCertManagerCAPlugin.csproj",
-  "about": {
-    "carest": {
-      "product_ids": [ "NexusCM" ],
-      "ca_plugin_config": [
-        {
-          "name": "Host",
-          "description": "The URI of the instance of the Nexus Certificate Manager API, including port.  example: https://127.0.0.1:8444"
-        },
-        {
-          "name": "AuthCertificatePath",
-          "description": "The path on the AnyCA Gateway host where the PFX certificate that will be used for authentication can be found. example: 'C:\\Program Files\\Keyfactor\\Keyfactor AnyCA Gateway\\AnyGatewayREST\\net8.0\\my_auth_cert.pfx'"
-        },
-        {
-          "name": "AuthCertPassword",
-          "description": "The password for the PFX certificate located on the AnyCA Gateway Host that will be used for authentication into Nexus Certificate Manager"
-        },
-        {
-          "name": "Enabled",
-          "description": "Flag to enable or disable gateway functionality. Disabling is primarily used to allow creation of the CA prior to configuration information being available."
+    "$schema": "https://keyfactor.github.io/v2/integration-manifest-schema.json",
+    "integration_type": "anyca-plugin",
+    "name": "Nexus Certificate Manager AnyCA REST Gateway Plugin",
+    "status": "prototype",
+    "support_level": "kf-community",
+    "link_github": false,
+    "update_catalog": false,
+    "description": "Nexus Certificate Manager plugin for the AnyCA REST Gateway framework",
+    "gateway_framework": "25.2.0",
+    "release_dir": "nexus-certificate-manager-caplugin/bin/Release",
+    "release_project": "nexus-certificate-manager-caplugin/NexusCertManagerCAPlugin.csproj",
+    "about": {
+        "carest": {
+            "product_ids": [
+                "NexusCM"
+            ],
+            "ca_plugin_config": [
+                {
+                    "name": "Host",
+                    "description": "The path to the Nexus CM server, including port"
+                },
+                {
+                    "name": "AuthCertificatePath",
+                    "description": "The path to the PFX certificate for authenticating into Nexus CM"
+                },
+                {
+                    "name": "AuthCertPassword",
+                    "description": "The password for the authentication certificate"
+                },
+                {
+                    "name": "Enabled",
+                    "description": "Flag to Enable or Disable gateway functionality. Disabling is primarily used to allow creation of the CA prior to configuration information being available."
+                }
+            ],
+            "enrollment_config": []
         }
-      ],
-      "enrollment_config": []
     }
-  }
 }

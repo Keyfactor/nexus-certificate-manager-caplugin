@@ -1,6 +1,6 @@
 ## Overview
 
-The Nexus Certificate Manager AnyCA REST plugin extends the capabilities of the Nexus Certificate Manager product to Keyfactor Command via the Keyfactor AnyCA Gateway REST. The plugin represents a fully featured AnyCA REST Plugin with the following capabilies:
+The Nexus Certificate Manager AnyCA REST plugin connects Nexus Certificate Manager to Keyfactor Command via the AnyCA Gateway REST. It supports the following capabilities:
 * Certificate Synchronization
 * Certificate Enrollment
 * Certificate Revocation
@@ -13,11 +13,11 @@ The Nexus Certificate Manager AnyCA REST plugin extends the capabilities of the 
 
 ## Gateway Registration
 
-In order to enroll certificates the Keyfactor Command server must trust the CA chain. Once you identify your Root and/or Subordinate CA used by the Nexus Certificate Manager platform, make sure to download and import the certificate chain into the Command Server certificate store
+To enroll certificates, the Keyfactor Command server must trust the CA chain. Identify the Root and/or Subordinate CA used by Nexus Certificate Manager, then download and import the certificate chain into the Command Server certificate store.
 
 ## CA Connection
 
-The certificate used by the gateway for authenticating into the Nexus Certificate Manager will need to be copied to a location on the Gateway Host that is accessible by the gateway service.  The Certificate Path 
+The certificate used by the gateway to authenticate into Nexus Certificate Manager must be copied to a location on the Gateway Host accessible by the gateway service.
 
 ## Certificate Template Creation Step
 
