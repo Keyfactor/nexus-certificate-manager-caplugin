@@ -19,7 +19,7 @@ jobs:
       command_hostname: ${{ vars.COMMAND_HOSTNAME }}
       command_base_api_path: ${{ vars.COMMAND_API_PATH }}
     secrets:
-      token: ${{ secrets.V2BUILDTOKEN }}
+      token: ${{ github.token }}
       gpg_key: ${{ secrets.KF_GPG_PRIVATE_KEY }}
       gpg_pass: ${{ secrets.KF_GPG_PASSPHRASE }}
       scan_token: ${{ secrets.SAST_TOKEN }}
