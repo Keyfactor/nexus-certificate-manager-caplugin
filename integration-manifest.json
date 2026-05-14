@@ -1,7 +1,7 @@
 {
   "$schema": "https://keyfactor.github.io/v2/integration-manifest-schema.json",
   "integration_type": "anyca-plugin",
-  "name": "Nexus Certificate Maanager AnyCA REST Gateway Plugin",
+  "name": "Nexus Certificate Manager AnyCA REST Gateway Plugin",
   "status": "prototype",
   "support_level": "kf-community",
   "link_github": false,
@@ -12,23 +12,27 @@
   "release_project": "nexus-certificate-manager-caplugin/NexusCertManagerCAPlugin.csproj",
   "about": {
     "carest": {
-      "product_ids": [ "NexusCM" ],
+      "product_ids": [],
       "ca_plugin_config": [
         {
           "name": "Host",
-          "description": "The URI of the instance of the Nexus Certificate Manager API, including port.  example: https://127.0.0.1:8444"
+          "description": "The URI of the Nexus Certificate Manager API, including port. Example: https://192.168.1.10:8444"
         },
         {
           "name": "AuthCertificatePath",
-          "description": "The path on the AnyCA Gateway host where the PFX certificate that will be used for authentication can be found. example: 'C:\\Program Files\\Keyfactor\\Keyfactor AnyCA Gateway\\AnyGatewayREST\\net8.0\\my_auth_cert.pfx'"
+          "description": "The full path on the AnyCA Gateway host to the PFX certificate used for mutual TLS authentication. Example: C:\\certs\\nexus-officer.pfx"
         },
         {
           "name": "AuthCertPassword",
-          "description": "The password for the PFX certificate located on the AnyCA Gateway Host that will be used for authentication into Nexus Certificate Manager"
+          "description": "The password for the PFX authentication certificate."
         },
         {
           "name": "Enabled",
           "description": "Flag to enable or disable gateway functionality. Disabling is primarily used to allow creation of the CA prior to configuration information being available."
+        },
+        {
+          "name": "SyncProcedureField",
+          "description": "Optional. Enables certificate synchronization. Set to the name of the Nexus CA ExtendedCertSearch field (e.g. 'field1') that the CA administrator has configured to store the issuing procedure name. When omitted, synchronization is disabled. See documentation for CA-side configuration requirements."
         }
       ],
       "enrollment_config": []

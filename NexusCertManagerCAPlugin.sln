@@ -7,9 +7,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NexusCertManagerCAPlugin", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4FA0BDF6-B41E-4E00-805F-AE79B894784A}"
 	ProjectSection(SolutionItems) = preProject
+		CHANGELOG.md = CHANGELOG.md
 		docsource\configuration.md = docsource\configuration.md
 		manifest.json = manifest.json
 	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NexusCertManagerCAPlugin.Tests", "NexusCertManagerCAPlugin.Tests\NexusCertManagerCAPlugin.Tests.csproj", "{57AF39E7-1A53-4D57-8D35-4F07C990A092}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +24,10 @@ Global
 		{5107B3B8-4F3A-4A1B-BE0E-AF6A1A0B2995}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5107B3B8-4F3A-4A1B-BE0E-AF6A1A0B2995}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5107B3B8-4F3A-4A1B-BE0E-AF6A1A0B2995}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57AF39E7-1A53-4D57-8D35-4F07C990A092}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57AF39E7-1A53-4D57-8D35-4F07C990A092}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57AF39E7-1A53-4D57-8D35-4F07C990A092}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57AF39E7-1A53-4D57-8D35-4F07C990A092}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
