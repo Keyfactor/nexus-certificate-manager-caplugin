@@ -347,3 +347,4 @@ healthchecksdb
 /cert.pem
 /cert.csr
 .config/dotnet-tools.json
+/.claude/agents
