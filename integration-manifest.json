@@ -12,25 +12,27 @@
     "release_project": "nexus-certificate-manager-caplugin/NexusCertManagerCAPlugin.csproj",
     "about": {
         "carest": {
-            "product_ids": [
-                "NexusCM"
-            ],
+            "product_ids": [],
             "ca_plugin_config": [
                 {
                     "name": "Host",
-                    "description": "The path to the Nexus CM server, including port"
+                    "description": "The URI of the Nexus Certificate Manager API, including port. Example: https://192.168.1.10:8444"
                 },
                 {
                     "name": "AuthCertificatePath",
-                    "description": "The path to the PFX certificate for authenticating into Nexus CM"
+                    "description": "The full path on the AnyCA Gateway host to the PFX certificate used for authenticating into Nexus Certificate Manager."
                 },
                 {
                     "name": "AuthCertPassword",
-                    "description": "The password for the authentication certificate"
+                    "description": "The password for the PFX authentication certificate."
                 },
                 {
                     "name": "Enabled",
                     "description": "Flag to Enable or Disable gateway functionality. Disabling is primarily used to allow creation of the CA prior to configuration information being available."
+                },
+                {
+                    "name": "SyncProcedureField",
+                    "description": "Optional. Enables certificate synchronization. Set this to the name of the Nexus CA ExtendedCertSearch field (e.g. \"field1\") that your CA administrator has configured to store the issuing procedure name at enrollment time. When provided, Synchronize will read that field from each certificate to reconstruct its ProductID (procedure name). When omitted, Synchronize is disabled because the Nexus CA API does not natively return the issuing procedure with certificate records. NOTE: Configuring the Nexus CA to populate this field requires custom Java InputView development and AWB policy changes by a CA administrator. This configuration is outside the scope of Keyfactor support."
                 }
             ],
             "enrollment_config": []

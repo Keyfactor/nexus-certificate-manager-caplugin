@@ -6,27 +6,25 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-using Keyfactor.Extensions.CAPlugin.NexusCertManager.models;
-using Keyfactor.Logging;
-using Microsoft.Extensions.Logging;
-using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Keyfactor.Extensions.CAPlugin.NexusCertManager.models;
+using Keyfactor.Logging;
+using Microsoft.Extensions.Logging;
+using RestSharp;
 
 namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 {
-
-    public class NexusCertManagerClient
+    public class NexusCertManagerClient : INexusCertManagerClient
     {
         private readonly ILogger _logger;
         private RestClient _restClient;
         private string _host;
         private string _authCertPath;
-
 
         public NexusCertManagerClient(string hostAndPort, string authCertPath, string authCertPassword)
         {
@@ -56,12 +54,13 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 
             var clientCerts = new X509CertificateCollection();
             clientCerts.Add(clientCertificate);
-            var options = new RestClientOptions(url) { ClientCertificates = clientCerts, RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true };
-            //var options = new RestClientOptions(url) { ClientCertificates = clientCerts };
+            
+            var options = new RestClientOptions(url) { ClientCertificates = clientCerts, RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true };           
             _restClient = new RestClient(options);
         }
 
-        public async Task<CertificateBinaryResponse> Enroll(string csr, CancellationToken ct = new CancellationToken())
+
+        public async Task<CertificateBinaryResponse> Enroll(string csr, string procName, CancellationToken ct = new CancellationToken())
         {
             _logger.MethodEntry();
             _logger.LogTrace($"preparing the request for enrollment.");
@@ -69,22 +68,9 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             var req = new RestRequest(ApiEndpoints.ENROLL, Method.Post);
             req.AddHeader("Accept", Constants.PEMCHAIN);
             req.AddParameter("pkcs10", csr);
-            var procname = string.Empty;
-            try
-            {
-                _logger.LogTrace("getting first available proc name for pkcs10 to submit with request..");
-                var procs = await GetProceduresByMediaType(Constants.MEDIATYPE_PKCS10);
-                procname = procs?.FirstOrDefault();
-                if (!string.IsNullOrEmpty(procname))
-                {
-                    req.AddParameter("procname", procname);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"unable to find a procedure for the media type {Constants.MEDIATYPE_PKCS10}: {LogHandler.FlattenException(ex)}");
-                _logger.LogTrace("we will attempt to perform enrollment without specifying procedure ID; relying on the default procedure to be configured");
-            }
+            req.AddParameter("procname", procName);
+
+            _logger.LogTrace($"using the provided procedure name (product ID) of {procName}");                        
 
             try
             {
@@ -103,6 +89,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             }
             finally { _logger.MethodExit(); }
         }
+
 
         /// <summary>
         /// Returns detailed information about a certificate
@@ -131,6 +118,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             }
             finally { _logger.MethodExit(); }
         }
+
 
         /// <summary>
         /// Downloads the contents of a certificate
@@ -172,6 +160,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             finally { _logger.MethodExit(); }
         }
 
+
         /// <summary>
         /// Sends a request to revoke a certificate
         /// </summary>
@@ -187,7 +176,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                                 
                 var req = new RestRequest(endpoint, Method.Post);
                 req.AddHeader("Content-Type", "application/x-www-form-urlencoded");
-                req.AddParameter("certid", certId);
+                req.AddParameter("certId", certId);
                 req.AddParameter("reason", reason);
 
                 _logger.LogTrace($"sending a request to {endpoint} to revoke certificate with ID {certId} and reason code {reason}");
@@ -201,10 +190,15 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             }
             finally { _logger.MethodExit(); }
         }
+
+
         /// <summary>
-        /// Returns a list of certificates
+        /// Returns one page of certificates matching the provided search parameters.
+        /// Use <see cref="ListCertificatesRequest.SearchLimit"/> and
+        /// <see cref="ListCertificatesRequest.SearchOffset"/> for pagination.
+        /// The total result count is available on the returned <see cref="CertificateListResponse.SearchHits"/>.
         /// </summary>
-        /// <param name="req"></param>
+        /// <param name="req">Optional search / pagination parameters.</param>
         /// <param name="ct"></param>
         /// <returns></returns>
         public async Task<CertificateListResponse> GetCertificateList(ListCertificatesRequest req = null, CancellationToken ct = new CancellationToken())
@@ -212,10 +206,43 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             _logger.MethodEntry();
             try
             {
-                var endpoint = ApiEndpoints.LISTCERTS;
-                _logger.LogTrace($"performing the GET request for endpoint {endpoint}");
-                var res = await _restClient.GetAsync<CertificateListResponse>(endpoint, ct);
-                _logger.LogTrace($"received a response.  Number of certs returned:  {res.SearchHits}");
+                var restReq = new RestRequest(ApiEndpoints.LISTCERTS, Method.Get);
+
+                if (req != null)
+                {
+                    if (req.SearchLimit.HasValue)        restReq.AddQueryParameter("searchLimit",        req.SearchLimit.Value.ToString());
+                    if (req.SearchOffset.HasValue)       restReq.AddQueryParameter("searchOffset",       req.SearchOffset.Value.ToString());
+                    if (!string.IsNullOrEmpty(req.OrderBy)) restReq.AddQueryParameter("orderBy",          req.OrderBy);
+                    if (req.OrderDescending.HasValue)    restReq.AddQueryParameter("orderDescending",    req.OrderDescending.Value.ToString().ToLower());
+                    if (req.IsNotRevoked.HasValue)       restReq.AddQueryParameter("isNotRevoked",       req.IsNotRevoked.Value.ToString().ToLower());
+                    if (req.IsExpired.HasValue)          restReq.AddQueryParameter("isExpired",          req.IsExpired.Value.ToString().ToLower());
+                    if (req.IsNotYetValid.HasValue)      restReq.AddQueryParameter("isNotYetValid",      req.IsNotYetValid.Value.ToString().ToLower());
+                    if (!string.IsNullOrEmpty(req.Field1)) restReq.AddQueryParameter("field1",           req.Field1);
+                    if (!string.IsNullOrEmpty(req.Field2)) restReq.AddQueryParameter("field2",           req.Field2);
+                    if (!string.IsNullOrEmpty(req.Field3)) restReq.AddQueryParameter("field3",           req.Field3);
+                    if (!string.IsNullOrEmpty(req.Field4)) restReq.AddQueryParameter("field4",           req.Field4);
+                    if (!string.IsNullOrEmpty(req.Field5)) restReq.AddQueryParameter("field5",           req.Field5);
+                    if (!string.IsNullOrEmpty(req.Field6)) restReq.AddQueryParameter("field6",           req.Field6);
+                    if (!string.IsNullOrEmpty(req.SubjectCommonName))      restReq.AddQueryParameter("subjectCommonName",      req.SubjectCommonName);
+                    if (!string.IsNullOrEmpty(req.CertificateSerialNumber)) restReq.AddQueryParameter("certificateSerialNumber", req.CertificateSerialNumber);
+                    if (!string.IsNullOrEmpty(req.Issuer)) restReq.AddQueryParameter("issuer",           req.Issuer);
+                    if (!string.IsNullOrEmpty(req.AuthorityKeyIdentifier)) restReq.AddQueryParameter("authorityKeyIdentifier", req.AuthorityKeyIdentifier);
+                    if (!string.IsNullOrEmpty(req.SubjectKeyIdentifier))   restReq.AddQueryParameter("subjectKeyIdentifier",   req.SubjectKeyIdentifier);
+                    if (req.SubjectType != null && req.SubjectType.Count > 0)
+                        restReq.AddQueryParameter("subjectType", string.Join(",", req.SubjectType));
+                    if (req.RevocationReason != null && req.RevocationReason.Count > 0)
+                        restReq.AddQueryParameter("revocationReason", string.Join(",", req.RevocationReason));
+                    if (req.RevocationTimeFrom.HasValue)  restReq.AddQueryParameter("revocationTimeFrom",  req.RevocationTimeFrom.Value.ToString("o"));
+                    if (req.RevocationTimeTo.HasValue)    restReq.AddQueryParameter("revocationTimeTo",    req.RevocationTimeTo.Value.ToString("o"));
+                    if (req.ValidFromTimeFrom.HasValue)   restReq.AddQueryParameter("validFromTimeFrom",   req.ValidFromTimeFrom.Value.ToString("o"));
+                    if (req.ValidFromTimeTo.HasValue)     restReq.AddQueryParameter("validFromTimeTo",     req.ValidFromTimeTo.Value.ToString("o"));
+                    if (req.ValidToTimeFrom.HasValue)     restReq.AddQueryParameter("validToTimeFrom",     req.ValidToTimeFrom.Value.ToString("o"));
+                    if (req.ValidToTimeTo.HasValue)       restReq.AddQueryParameter("validToTimeTo",       req.ValidToTimeTo.Value.ToString("o"));
+                }
+
+                _logger.LogTrace($"performing the GET request for endpoint {_restClient.BuildUri(restReq)}");
+                var res = await _restClient.GetAsync<CertificateListResponse>(restReq, ct);
+                _logger.LogTrace($"received a response. searchHits: {res.SearchHits}, certificates in page: {res.Certificates?.Count}");
                 return res;
             }
             catch (Exception ex)
@@ -224,8 +251,9 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                 throw;
             }
             finally { _logger.MethodExit(); }
-
         }
+
+
         /// <summary>
         /// retreives the procedures associated with the provided media type value
         /// </summary>
@@ -240,10 +268,10 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             {
                 var endpoint = ApiEndpoints.LISTPROCEDURES;
                 var req = new RestRequest(endpoint);
-                req.AddQueryParameter("mediaType", Constants.MEDIATYPE_PKCS10);
+                req.AddQueryParameter("mediaType", mediaType);
                 var res = await _restClient.GetAsync<ListProceduresResponse>(req);
 
-                var procedures = res.Procedures.Select(p => p.ProcId).ToList();
+                var procedures = res.Procedures.Select(p => p.Name).ToList();
                 _logger.LogTrace($"successfully retrieved a list of {procedures.Count} procedures for mediaType {mediaType}");
                 return procedures;
             }
@@ -261,7 +289,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         /// The content of the response is ignored
         /// </summary>
         /// <returns>A boolean indicating whether the server is reachable and responding.</returns>
-        public async Task<Boolean> PingServer()
+        public async Task<bool> PingServer()
         {
             _logger.MethodEntry();
             try

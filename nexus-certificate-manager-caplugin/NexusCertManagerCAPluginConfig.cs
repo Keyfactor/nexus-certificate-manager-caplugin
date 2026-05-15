@@ -23,5 +23,14 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 
         [JsonPropertyName(Constants.ENABLED)]
         public bool Enabled { get; set; }
+
+        /// <summary>
+        /// Optional. The name of the ExtendedCertSearch field (e.g. "field1") that the Nexus CA
+        /// has been configured to populate with the issuing procedure name at certificate issuance
+        /// time. When set, Synchronize will use this field to resolve each certificate's ProductID.
+        /// When absent, Synchronize is disabled — see documentation for details.
+        /// </summary>
+        [JsonPropertyName(Constants.SYNC_PROCEDURE_FIELD)]
+        public string SyncProcedureField { get; set; }
     }
 }
