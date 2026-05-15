@@ -10,24 +10,27 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 {
     public static class Constants
     {
-        //names
+        // config property names
         public const string HOST = "Host";
         public const string AUTHCERTPATH = "AuthCertificatePath";
-        public const string ENABLED = "Enabled";        
+        public const string ENABLED = "Enabled";
         public const string AUTHCERTPASSWORD = "AuthCertPassword";
+        public const string SYNC_PROCEDURE_FIELD = "SyncProcedureField";
 
-
-        //values
+        // API / HTTP values
         public const string APIPATH = "pgwy/api";
-        public const string PRODUCTID = "NexusCM";
         public const string PKCS7MIMETYPE = "application/pkcs7-mime";
         public const string PEMCHAIN = "application/pem-certificate-chain";
 
+        // procedure media types
         public const string MEDIATYPE_PKCS10 = "pkcs10";
         public const string MEDIATYPE_PKCS12 = "pkcs12";
         public const string MEDIATYPE_SMARTCARD = "smartcard";
         public const string MEDIATYPE_ATTRIBUTECERT = "attributecertificate";
         public const string MEDIATYPE_DATA = "data";
+
+        // pagination
+        public const int SYNC_PAGE_SIZE = 500;
     }
 
     public static class ApiEndpoints 
