@@ -6,42 +6,60 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using Keyfactor.AnyGateway.Extensions;
 using Keyfactor.Extensions.CAPlugin.NexusCertManager.models;
 using Keyfactor.Logging;
-using Microsoft.Extensions.Logging;
 using Keyfactor.PKI.Enums.EJBCA;
-using Newtonsoft.Json;
-using System.Collections.Concurrent;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Linq;
-using System;
-using System.Threading;
-using System.IO;
+using Microsoft.Extensions.Logging;
 
 namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
 {
     public class NexusCertManagerCAPlugin : IAnyCAPlugin
     {
+        private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
+
         private readonly ILogger _logger;
         private NexusCertManagerCAPluginConfig _config;
         private ICertificateDataReader _certificateDataReader;
-        private NexusCertManagerClient _client;
+        private INexusCertManagerClient _client;
 
         public NexusCertManagerCAPlugin(ILogger<NexusCertManagerCAPlugin> logger)
         {
             _logger = logger;
         }
 
+        /// <summary>
+        /// Internal constructor used by unit tests to inject mock dependencies
+        /// without requiring a live Nexus CA or a PFX certificate on disk.
+        /// </summary>
+        internal NexusCertManagerCAPlugin(
+            ILogger<NexusCertManagerCAPlugin> logger,
+            INexusCertManagerClient client,
+            ICertificateDataReader certificateDataReader,
+            NexusCertManagerCAPluginConfig config)
+        {
+            _logger = logger;
+            _client = client;
+            _certificateDataReader = certificateDataReader;
+            _config = config;
+        }
+
         public void Initialize(IAnyCAPluginConfigProvider configProvider, ICertificateDataReader certificateDataReader)
         {
             LogPluginVersion();
 
-            string rawConfig = JsonConvert.SerializeObject(configProvider.CAConnectionData);
+            string rawConfig = JsonSerializer.Serialize(configProvider.CAConnectionData);
             _logger.LogTrace($"serialized configuration values: \n{rawConfig}\n");
-            _config = JsonConvert.DeserializeObject<NexusCertManagerCAPluginConfig>(rawConfig);
+            _config = JsonSerializer.Deserialize<NexusCertManagerCAPluginConfig>(rawConfig, _jsonOptions);
             _logger.LogTrace($"deserialized the configuration:\nAuthCertPath: {_config.AuthCertificatePath}\nHost: {_config.Host}\nAuthCertPassword: {_config.AuthCertPassword}");
             _client = new NexusCertManagerClient(_config.Host, _config.AuthCertificatePath, _config.AuthCertPassword); // need to set the values            
             _certificateDataReader = certificateDataReader;
@@ -76,7 +94,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             _logger.LogTrace($"Attempting to enroll for certificate with:\nSubject: {subject}\nSANs: {sans}\nParams: {paramsList}\nCSR: {csr}");
             try
             {
-                var res = await _client.Enroll(csr);
+                var res = await _client.Enroll(csr, productInfo.ProductID);
 
                 var enrollmentResult = new EnrollmentResult
                 {
@@ -110,21 +128,21 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             {
                 [Constants.HOST] = new PropertyConfigInfo
                 {
-                    Comments = "The path to the Nexus CM server, including port",
+                    Comments = "The URI of the Nexus Certificate Manager API, including port. Example: https://192.168.1.10:8444",
                     Hidden = false,
                     DefaultValue = "",
                     Type = "String"
                 },
                 [Constants.AUTHCERTPATH] = new PropertyConfigInfo
                 {
-                    Comments = "The path to the PFX certificate for authenticating into Nexus CM",
+                    Comments = "The full path on the AnyCA Gateway host to the PFX certificate used for authenticating into Nexus Certificate Manager.",
                     Hidden = false,
                     DefaultValue = "",
                     Type = "String"
                 },
                 [Constants.AUTHCERTPASSWORD] = new PropertyConfigInfo
                 {
-                    Comments = "The password for the authentication certificate",
+                    Comments = "The password for the PFX authentication certificate.",
                     Hidden = true,
                     DefaultValue = "",
                     Type = "String"
@@ -135,20 +153,45 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                     Hidden = false,
                     DefaultValue = true,
                     Type = "Boolean"
+                },
+                [Constants.SYNC_PROCEDURE_FIELD] = new PropertyConfigInfo
+                {
+                    Comments = "Optional. Enables certificate synchronization. Set this to the name of the Nexus CA ExtendedCertSearch field (e.g. \"field1\") " +
+                               "that your CA administrator has configured to store the issuing procedure name at enrollment time. " +
+                               "When provided, Synchronize will read that field from each certificate to reconstruct its ProductID (procedure name). " +
+                               "When omitted, Synchronize is disabled because the Nexus CA API does not natively return the issuing procedure with certificate records. " +
+                               "NOTE: Configuring the Nexus CA to populate this field requires custom Java InputView development and AWB policy changes by a CA administrator. " +
+                               "This configuration is outside the scope of Keyfactor support.",
+                    Hidden = false,
+                    DefaultValue = "",
+                    Type = "String"
                 }
             };
         }
 
 
         /// <summary>
-        /// this CA is does not split it's certificates into discernable "product types"
-        /// consequently, we are using a single product type for all certificates.
+        /// Product ID's correspond to 'procedures' in the Nexus Certificate Manager        
         /// </summary>
-        /// <returns>A list of strings containing one element: "NexusCA"</returns>
+        /// <returns>A list of procedure identifiers to use as the product ID's</returns>
         public List<string> GetProductIds()
         {
             _logger.MethodEntry();
-            return new List<string> { Constants.PRODUCTID };
+            var productIds = new List<string>();
+            try
+            {
+                productIds = _client.GetProceduresByMediaType().GetAwaiter().GetResult();
+                _logger.LogTrace($"successfully retrieved {productIds.Count} procedure names");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"An error occurred when attempting to retrieve the procedure names: {LogHandler.FlattenException(ex)}");
+            }
+            finally
+            {
+                _logger.MethodExit();
+            }
+            return productIds;
         }
 
         public async Task<AnyCAPluginCertificate> GetSingleRecord(string caRequestID)
@@ -159,14 +202,20 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                 _logger.LogTrace($"getting certificate details for certId: {caRequestID}");
                 var certDetails = await _client.GetCertificateDetails(caRequestID);
 
-                _logger.LogTrace($"download certificate with ID: {caRequestID}");
+                _logger.LogTrace($"downloading certificate with ID: {caRequestID}");
                 var certContent = await _client.DownloadCertificate(caRequestID);
+
+                // Resolve ProductID from the configured ExtendedCertSearch field if available;
+                // otherwise leave null so the Gateway framework handles the unresolvable case.
+                string productId = ResolveProductIdFromExtendedSearch(certDetails.Certificate.ExtendedCertSearch);
+                if (productId == null)
+                    _logger.LogWarning($"Unable to resolve ProductID for cert {caRequestID}: SyncProcedureField is not configured or the field was empty.");
 
                 var cert = new AnyCAPluginCertificate()
                 {
                     CARequestID = caRequestID,
                     Certificate = certContent.Base64EncodedCertificateData,
-                    ProductID = certDetails.Certificate.CertId,
+                    ProductID = productId,
                     Status = Helpers.GetStatusCodeFromNexusCADescription(certDetails.Certificate.Status),
                 };
                 if (cert.Status == (int)EndEntityStatus.REVOKED)
@@ -175,7 +224,6 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
                     cert.RevocationReason = Helpers.GetRevocationReasonCodeFromNexusCADescription(certDetails.Certificate.Reason);
                 }
                 return cert;
-
             }
             catch (Exception ex)
             {
@@ -239,103 +287,168 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         }
 
         /// <summary>
-        /// Synchronize gets the list of certs from the CA and updates the status of each known cert to the latest, and adds missing cert info to the database.
+        /// Synchronizes certificates from the Nexus CA into Command.
+        /// <para>
+        /// Synchronization requires the <c>SyncProcedureField</c> CA connection parameter to be configured.
+        /// When not configured, this method throws <see cref="NotSupportedException"/> with an explanation.
+        /// See the plugin documentation for guidance on enabling sync.
+        /// </para>
         /// </summary>
-        /// <param name="blockingBuffer">the database reader, passed by framework</param>
-        /// <param name="lastSync">the time of last sync</param>
-        /// <param name="fullSync">whether or not to perform a full sync</param>
-        /// <param name="cancelToken">the cancel token</param>
-        /// <returns></returns>
+        /// <param name="blockingBuffer">Certificate buffer provided by the Gateway framework.</param>
+        /// <param name="lastSync">The time of the last sync operation.</param>
+        /// <param name="fullSync">Whether to perform a full sync regardless of last-sync time.</param>
+        /// <param name="cancelToken">Cancellation token.</param>
         public async Task Synchronize(BlockingCollection<AnyCAPluginCertificate> blockingBuffer, DateTime? lastSync, bool fullSync, CancellationToken cancelToken)
         {
             _logger.MethodEntry();
+
+            if (string.IsNullOrWhiteSpace(_config.SyncProcedureField))
+            {
+                throw new NotSupportedException(
+                    "Certificate synchronization is not supported by the Nexus Certificate Manager CA Plugin unless the " +
+                    "'SyncProcedureField' CA connection parameter is configured. " +
+                    "The Nexus CA REST API does not return the issuing procedure name in certificate list or detail responses, " +
+                    "making it impossible to associate synced certificates with their originating ProductID (procedure). " +
+                    "To enable sync, a Nexus CA administrator must configure a token procedure to populate one of the " +
+                    "ExtendedCertSearch fields (field1-field6) with the procedure name at enrollment time, then set " +
+                    "'SyncProcedureField' on this CA connection to the name of that field (e.g. 'field1'). " +
+                    "See the plugin documentation for full details. Note: this CA-side configuration requires custom " +
+                    "Java InputView development and is outside the scope of Keyfactor support.");
+            }
+
+            _logger.LogTrace($"Sync is enabled. Resolving ProductID from ExtendedCertSearch field: '{_config.SyncProcedureField}'");
+
             var updatedCerts = new List<AnyCAPluginCertificate>();
+            int offset = 0;
+            int totalHits = 0;
+            int pageCount = 0;
 
             try
             {
-                // retrieve the list of certs from Nexus CM
-                _logger.LogTrace("attempting to retrieve the list of cert names from Nexus CM");
-                var certList = await _client.GetCertificateList(null, cancelToken);
-                _logger.LogTrace($"successfully returned {certList.SearchHits} results.");
-
-                certList.Certificates.ForEach(async cert =>
+                // paginated fetch loop
+                do
                 {
-                    var dbStatus = -1;
+                    cancelToken.ThrowIfCancellationRequested();
 
-                    _logger.LogTrace("- cert details - ");
-                    _logger.LogTrace($"certId: {cert.CertId}");
-                    _logger.LogTrace($"status: {cert.Status}");
-                    _logger.LogTrace($"revocation time: {cert.RevocationTime}");
-                    _logger.LogTrace($"serial number: {cert.CertificateSerialNumber}");
-                    _logger.LogTrace($"reason: {cert.Reason}");
+                    _logger.LogTrace($"Fetching certificate page: offset={offset}, pageSize={Constants.SYNC_PAGE_SIZE}");
+                    var page = await _client.GetCertificateList(new ListCertificatesRequest
+                    {
+                        SearchLimit = Constants.SYNC_PAGE_SIZE,
+                        SearchOffset = offset
+                    }, cancelToken);
 
-                    var updatedCert = new AnyCAPluginCertificate
+                    if (pageCount == 0)
                     {
-                        CARequestID = cert.CertId,
-                        ProductID = Constants.PRODUCTID,
-                        Status = Helpers.GetStatusCodeFromNexusCADescription(cert.Status),
-                        RevocationDate = cert.RevocationTime,
-                        
-                    };
-                    if (!string.IsNullOrEmpty(cert.Reason)) {
-                        updatedCert.RevocationReason = Helpers.GetRevocationReasonCodeFromNexusCADescription(cert.Reason);
-                    }
-                    // check for an existing local entry
-                    try
-                    {
-                        _logger.LogTrace($"attempting to retreive status of cert with tracking id {cert.CertId} from the database");
-                        dbStatus = await _certificateDataReader.GetStatusByRequestID(cert.CertId);
-                    }
-                    catch
-                    {
-                        _logger.LogTrace($"tracking id {cert.CertId} was not found in the database.  it will be added.");
+                        totalHits = page.SearchHits;
+                        _logger.LogTrace($"Total certificates reported by Nexus CA: {totalHits}");
                     }
 
-                    if (dbStatus == -1 || fullSync || (updatedCert.Status != dbStatus))
+                    var certs = page.Certificates ?? new List<JsonCertificate>();
+                    _logger.LogTrace($"Page returned {certs.Count} certificates");
+
+                    foreach (var cert in certs)
                     {
-                        // if it is a new cert, if we are doing a full sync, or if the status changed; we add it to collection to be updated in the db
-                        updatedCerts.Add(updatedCert);
+                        var productId = ResolveProductIdFromExtendedSearch(cert.ExtendedCertSearch);
+                        if (productId == null)
+                        {
+                            _logger.LogWarning($"Cert {cert.CertId}: ExtendedCertSearch field '{_config.SyncProcedureField}' was empty or missing. " +
+                                               $"This certificate will be skipped during sync.");
+                            continue;
+                        }
+
+                        var updatedCert = new AnyCAPluginCertificate
+                        {
+                            CARequestID = cert.CertId,
+                            ProductID = productId,
+                            Status = Helpers.GetStatusCodeFromNexusCADescription(cert.Status),
+                            RevocationDate = cert.RevocationTime,
+                        };
+
+                        if (!string.IsNullOrEmpty(cert.Reason))
+                            updatedCert.RevocationReason = Helpers.GetRevocationReasonCodeFromNexusCADescription(cert.Reason);
+
+                        // check for an existing local entry
+                        var dbStatus = -1;
+                        try
+                        {
+                            dbStatus = await _certificateDataReader.GetStatusByRequestID(cert.CertId);
+                        }
+                        catch
+                        {
+                            _logger.LogTrace($"Cert {cert.CertId} not found in local database — will be added.");
+                        }
+
+                        if (dbStatus == -1 || fullSync || updatedCert.Status != dbStatus)
+                            updatedCerts.Add(updatedCert);
                     }
-                });
 
-                // now get the cert content for each.. 
-                _logger.LogTrace($"getting certificate content for each..");
+                    offset += certs.Count;
+                    pageCount++;
 
+                } while (offset < totalHits);
+
+                _logger.LogTrace($"Pagination complete. {pageCount} page(s) fetched. {updatedCerts.Count} certificates queued for update.");
+
+                // download certificate content for each cert that needs updating
                 foreach (var cert in updatedCerts)
                 {
-                    if (cancelToken.IsCancellationRequested)
-                    {
-                        _logger.LogInformation("Nexus CA sync cancelled.");
-                        cancelToken.ThrowIfCancellationRequested();
-                    }
+                    cancelToken.ThrowIfCancellationRequested();
+
+                    _logger.LogTrace($"Downloading certificate content for certId: {cert.CARequestID}");
                     var certContent = await _client.DownloadCertificate(cert.CARequestID, Constants.PEMCHAIN, cancelToken);
-                    _logger.LogTrace("getting the leaf certificate");
                     cert.Certificate = Helpers.GetEndEntityCertificate(certContent.Base64EncodedCertificateData, _logger);
-                    _logger.LogTrace($"leaf cert: {cert.Certificate}");
                 }
 
-                _logger.LogTrace($"got the content for {updatedCerts.Count} certs");
-                _logger.LogTrace($"updating the database..");
-                
+                _logger.LogTrace($"Writing {updatedCerts.Count} certificates to the buffer.");
                 foreach (var cert in updatedCerts)
                 {
-                    _logger.LogTrace($"adding cert with id: {cert.CARequestID} and productID {cert.ProductID}");
+                    _logger.LogTrace($"Buffering cert id={cert.CARequestID}, productId={cert.ProductID}");
                     blockingBuffer.Add(cert, cancelToken);
                 }
 
-                _logger.LogTrace($"successfully synced {updatedCerts.Count}");
+                _logger.LogInformation($"Nexus CA sync complete. {updatedCerts.Count} certificate(s) synchronized.");
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Nexus CA sync was cancelled.");
+                throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError($"an error occurred during the sync: {ex.Message}");
-                _logger.LogError($"{LogHandler.FlattenException(ex)}");
+                _logger.LogError($"An error occurred during sync: {LogHandler.FlattenException(ex)}");
                 throw;
             }
             finally
             {
-                _logger.LogTrace("successfully completed CA sync for Nexus CM");
                 _logger.MethodExit();
             }
+        }
+
+        /// <summary>
+        /// Reads the ProductID (procedure name) from the configured ExtendedCertSearch field on a certificate.
+        /// Returns null if <c>SyncProcedureField</c> is not configured or the field value is empty.
+        /// </summary>
+        private string ResolveProductIdFromExtendedSearch(ExtendedCertSearch extendedCertSearch)
+        {
+            if (string.IsNullOrWhiteSpace(_config.SyncProcedureField) || extendedCertSearch == null)
+                return null;
+
+            var fieldName = _config.SyncProcedureField.Trim().ToLowerInvariant();
+            var value = fieldName switch
+            {
+                "field1" => extendedCertSearch.Field1,
+                "field2" => extendedCertSearch.Field2,
+                "field3" => extendedCertSearch.Field3,
+                "field4" => extendedCertSearch.Field4,
+                "field5" => extendedCertSearch.Field5,
+                "field6" => extendedCertSearch.Field6,
+                _ => null
+            };
+
+            if (value == null)
+                _logger.LogWarning($"SyncProcedureField '{_config.SyncProcedureField}' is not a recognised ExtendedCertSearch field name. Valid values are: field1, field2, field3, field4, field5, field6.");
+
+            return string.IsNullOrWhiteSpace(value) ? null : value;
         }
 
         public async Task ValidateCAConnectionInfo(Dictionary<string, object> connectionInfo)
@@ -416,7 +529,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
             else
             {
                 // validate that it is a valid url
-                var valid = Uri.TryCreate((string)connectionInfo[Constants.HOST], UriKind.Absolute, out var newUri);
+                var valid = Uri.TryCreate((string)connectionInfo[Constants.HOST], UriKind.Absolute, out _);
                 if (!valid)
                 {
                     errors.Add($"the host URL {connectionInfo[Constants.HOST]} could not be parsed as a valid URL");
@@ -455,13 +568,15 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager
         }
 
         /// <summary>
-        /// Since we are using a single productId, there is nothing to validate
+        /// Validates that the ProductID on the enrollment request is a non-empty string.
+        /// ProductIDs correspond to Nexus CA procedure names; an empty value would cause
+        /// enrollment to fall back to the server-side default procedure, which is rarely intended.
         /// </summary>
-        /// <param name="productInfo"></param>
-        /// <param name="connectionInfo"></param>
-        /// <returns>Task.CompletedTask</returns>
         public Task ValidateProductInfo(EnrollmentProductInfo productInfo, Dictionary<string, object> connectionInfo)
-        {            
+        {
+            if (string.IsNullOrWhiteSpace(productInfo?.ProductID))
+                throw new AnyCAValidationException("ProductID (procedure name) must not be empty. Ensure the certificate template is configured with a valid Nexus CA procedure name.");
+
             return Task.CompletedTask;
         }
     }
