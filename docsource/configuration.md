@@ -72,7 +72,6 @@ To populate an `ExtendedCertSearch` field with the procedure name at enrollment 
 
 See [CHANGELOG.md](../CHANGELOG.md).
 
-## Certificate Template Creation Step
 
-TODO Certificate Template Creation Step is a required section
+
 
