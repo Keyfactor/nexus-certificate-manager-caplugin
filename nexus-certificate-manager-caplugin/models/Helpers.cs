@@ -6,16 +6,15 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-using Keyfactor.PKI.Enums.EJBCA;
-using Keyfactor.PKI.X509;
-using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Tls;
-using RestSharp;
 using System;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
+using Keyfactor.PKI.Enums.EJBCA;
+using Keyfactor.PKI.X509;
+using Microsoft.Extensions.Logging;
+using RestSharp;
 
 namespace Keyfactor.Extensions.CAPlugin.NexusCertManager.models
 {
@@ -24,7 +23,7 @@ namespace Keyfactor.Extensions.CAPlugin.NexusCertManager.models
         public static string ParseSubject(string subject, string rdn)
         {
             string escapedSubject = subject.Replace("\\,", "|");
-            string rdnString = escapedSubject.Split(',').ToList().Where(x => x.Contains(rdn)).FirstOrDefault();
+            string rdnString = escapedSubject.Split(',').ToList().FirstOrDefault(x => x.Contains(rdn));
 
             if (!string.IsNullOrEmpty(rdnString))
             {
